@@ -1,4 +1,4 @@
-package com.classroom.google_classroom_clone;
+package com.classroom;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
