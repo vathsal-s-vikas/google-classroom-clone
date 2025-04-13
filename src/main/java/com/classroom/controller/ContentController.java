@@ -11,7 +11,7 @@ public class ContentController {
         return "login";
     }
 
-    @GetMapping("/signup")
+    @GetMapping("/req/signup")
     public String signup(){
         return "signup";
     }

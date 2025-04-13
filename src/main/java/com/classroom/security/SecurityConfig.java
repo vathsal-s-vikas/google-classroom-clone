@@ -37,23 +37,21 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
+        return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/signup", "/css/**", "/js/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .defaultSuccessUrl("/redirect", true)
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll()
-                );
-        return http.build();
+                .formLogin(httpForm ->{
+                    httpForm.loginPage("/login").permitAll();
+                    httpForm.defaultSuccessUrl("/index");
+
+                })
+
+
+                .authorizeHttpRequests(registry ->{
+                    registry.requestMatchers("/req/signup","/css/**","/js/**").permitAll();
+                    registry.anyRequest().authenticated();
+                })
+                .build();
     }
 
     @Bean
