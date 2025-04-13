@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Classroom Clone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .hero {
+            background-color: #f8f9fa;
+            padding: 100px 0;
+        }
+        .feature-card {
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            transition: transform 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .features {
+            padding: 80px 0;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Classroom Clone</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" th:href="@{/login}">Login</a>
+                </li>
+                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <span sec:authentication="name">User</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li sec:authorize="hasRole('TEACHER')">
+                            <a class="dropdown-item" th:href="@{/teacher/dashboard}">Teacher Dashboard</a>
+                        </li>
+                        <li sec:authorize="hasRole('STUDENT')">
+                            <a class="dropdown-item" th:href="@{/student/dashboard}">Student Dashboard</a>
+                        </li>
+                        <li sec:authorize="hasRole('TA')">
+                            <a class="dropdown-item" th:href="@{/ta/dashboard}">TA Dashboard</a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post">
+                                <button class="dropdown-item" type="submit">Logout</button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container text-center">
+        <h1 class="display-4 mb-4">Welcome to Classroom Clone</h1>
+        <p class="lead mb-5">A powerful learning management system for teachers and students.</p>
+        <div sec:authorize="!isAuthenticated()">
+            <a th:href="@{/login}" class="btn btn-primary btn-lg px-4 me-2">Get Started</a>
+            <a href="#features" class="btn btn-outline-dark btn-lg px-4">Learn More</a>
+        </div>
+        <div sec:authorize="isAuthenticated()">
+            <a sec:authorize="hasRole('TEACHER')" th:href="@{/teacher/dashboard}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+            <a sec:authorize="hasRole('STUDENT')" th:href="@{/student/dashboard}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+            <a sec:authorize="hasRole('TA')" th:href="@{/ta/dashboard}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features">
+    <div class="container">
+        <h2 class="text-center mb-5">Key Features</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card bg-white">
+                    <h3>Streamlined Assignment Management</h3>
+                    <p>Create, distribute, and grade assignments with ease. Track student progress and provide timely feedback.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card bg-white">
+                    <h3>Easy Course Organization</h3>
+                    <p>Organize course materials, announcements, and resources in one centralized location.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card bg-white">
+                    <h3>Collaborative Learning</h3>
+                    <p>Enable group assignments and foster student collaboration with integrated team features.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-light py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-0">&copy; 2025 Classroom Clone. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
