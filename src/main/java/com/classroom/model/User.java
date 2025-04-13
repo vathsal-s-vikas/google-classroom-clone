@@ -18,7 +18,31 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+
+    private String SRN;
+
     private String name;
+
+
+
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    private boolean googleLinked;
+
+    private String oauthId;
+
+
+    private String password;
+
+    public String getSRN() {
+        return SRN;
+    }
+
+    public void setSRN(String SRN) {
+        this.SRN = SRN;
+    }
 
     public Long getId() {
         return id;
@@ -28,12 +52,13 @@ public class User {
         this.id = id;
     }
 
-    @Column(unique = true, nullable = false)
-    private String email;
+    public String getName() {
+        return name;
+    }
 
-    private boolean googleLinked;
-
-    private String oauthId;
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getPassword() {
         return password;
@@ -41,16 +66,6 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    private String password;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getEmail() {
@@ -77,14 +92,6 @@ public class User {
         this.oauthId = oauthId;
     }
 
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
-    }
-
     public UserType getUserType() {
         return userType;
     }
@@ -101,7 +108,6 @@ public class User {
         this.active = active;
     }
 
-    private String profilePicture;
 
     @Enumerated(EnumType.STRING)
     private UserType userType;

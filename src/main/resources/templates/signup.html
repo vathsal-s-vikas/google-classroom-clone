@@ -13,13 +13,20 @@
         <h1>Sign Up</h1>
         <div class="inputbox">
             <ion-icon name="person-outline"></ion-icon>
-            <input type="text" id="username" name="username" required>
-            <label for="username">Name</label>
+            <input type="text" id="name" name="name" required>
+            <label for="name">Name</label>
         </div>
         <div class="inputbox">
             <ion-icon name="mail-outline"></ion-icon>
             <input type="email" id="email" name="email" required>
             <label for="email">Email</label>
+        </div>
+        <div class="inputbox">
+            <ion-icon name="person-outline"></ion-icon>
+            <input type="text" id="SRN" name="SRN" required
+                   pattern="PES[12]UG[0-9]{2}[A-Za-z]{2}[0-9]{3}"
+                   title="SRN must be in the format PES1UG22CS494">
+            <label for="SRN">SRN</label>
         </div>
         <div class="inputbox">
             <ion-icon name="lock-closed-outline"></ion-icon>
@@ -35,7 +42,7 @@
         <!-- 🔽 User Role Dropdown -->
         <div class="inputbox">
             <ion-icon name="accessibility-outline"></ion-icon>
-            <select id="role" name="role" required>
+            <select id="userType" name="userType" required>
                 <option value="" disabled selected>Select Role</option>
                 <option value="STUDENT">Student</option>
                 <option value="TA">Teaching Assistant</option>
@@ -54,11 +61,12 @@
     document.getElementById("signupForm").addEventListener('submit', (e) => {
         e.preventDefault(); // prevent default form submission
 
-        const username = document.getElementById('username').value;
+        const name = document.getElementById('name').value;
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('passwordcon').value;
-        const role = document.getElementById('role').value;
+        const userType = document.getElementById('userType').value;
+        const SRN = document.getElementById('SRN').value;
 
         if (password !== confirmPassword) {
             alert("Passwords do not match!");
@@ -66,10 +74,11 @@
         }
 
         const data = {
-            username,
+            name,
             email,
             password,
-            role
+            userType,
+            SRN
         };
 
         fetch('/req/signup', {
