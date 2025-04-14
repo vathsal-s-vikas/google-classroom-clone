@@ -2,6 +2,7 @@ package com.classroom.clone.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ public class User {
     @Column(name = "profile_picture")
     private String profilePicture;
 
+    @Getter
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type", nullable = false)
     private UserType userType;
@@ -110,4 +112,5 @@ public class User {
         }
         return assistingCourses;
     }
+
 }
