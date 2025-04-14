@@ -1,4 +1,7 @@
 package com.classroom.clone.exception;
 
-public class PermissionDeniedException {
+public class PermissionDeniedException extends RuntimeException {
+    public PermissionDeniedException(String message) {
+        super(message);
+    }
 }

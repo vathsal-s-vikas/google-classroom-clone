@@ -1,4 +1,6 @@
 package com.classroom.clone.model;
 
-public class AssignmentType {
+public enum AssignmentType {
+    INDIVIDUAL,
+    GROUP
 }

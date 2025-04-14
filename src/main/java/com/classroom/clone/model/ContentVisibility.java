@@ -1,4 +1,7 @@
 package com.classroom.clone.model;
 
-public class ContentVisibility {
+public enum ContentVisibility {
+    VISIBLE,
+    HIDDEN,
+    SCHEDULED
 }

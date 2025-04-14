@@ -1,4 +1,8 @@
 package com.classroom.clone.model;
 
-public class ContentType {
+public enum ContentType {
+    DOCUMENT,
+    VIDEO,
+    LINK,
+    ANNOUNCEMENT
 }
