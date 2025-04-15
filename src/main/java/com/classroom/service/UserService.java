@@ -1,5 +1,6 @@
 package com.classroom.service;
 import com.classroom.model.User;
+import com.classroom.model.UserType;
 import com.classroom.repository.UserRepository;
 
 
@@ -26,10 +27,27 @@ public class UserService implements UserDetailsService {
             return org.springframework.security.core.userdetails.User
                     .withUsername(userObj.getEmail())
                     .password(userObj.getPassword())
-//                    .roles("USER") // You can replace this with dynamic roles later
+                    .roles("USER") // You can replace this with dynamic roles later
                     .build();
         } else {
             throw new UsernameNotFoundException(email);
+        }
+    }
+
+
+    public void processOAuthPostLogin(String email, String name) {
+        Optional<User> existingUser = repository.findByEmail(email);
+
+        if (existingUser.isEmpty()) {
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setName(name);
+            newUser.setUserType(UserType.STUDENT); // or default to whatever you want
+
+            // Set a dummy password as it's not needed for OAuth users
+            newUser.setPassword("OAUTH_USER");
+
+            repository.save(newUser);
         }
     }
 //    @Autowired

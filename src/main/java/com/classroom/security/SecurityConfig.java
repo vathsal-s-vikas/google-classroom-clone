@@ -37,22 +37,26 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(httpForm ->{
+                .authorizeHttpRequests(registry -> {
+                    registry
+                            .requestMatchers("/req/signup", "/css/**", "/js/**", "/login", "/oauth2/**").permitAll()
+                            .anyRequest().authenticated();
+                })
+                .formLogin(httpForm -> {
                     httpForm.loginPage("/login").permitAll();
                     httpForm.defaultSuccessUrl("/index");
-
                 })
-
-
-                .authorizeHttpRequests(registry ->{
-                    registry.requestMatchers("/req/signup","/css/**","/js/**").permitAll();
-                    registry.anyRequest().authenticated();
+                .oauth2Login(oauth2 -> {
+                    oauth2
+                            .loginPage("/login")
+                            .defaultSuccessUrl("/oauth2/success", true); // you can change this to redirect after OAuth
                 })
                 .build();
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {

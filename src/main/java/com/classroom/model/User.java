@@ -3,6 +3,8 @@ package com.classroom.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.*;
 
 
 @Getter
@@ -18,13 +20,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-
-    private String SRN;
-
     private String name;
-
-
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -36,13 +32,39 @@ public class User {
 
     private String password;
 
-    public String getSRN() {
-        return SRN;
+//    public Set<Course> getCourses() {
+//        return courses;
+//    }
+
+//    public void setCourses(Set<Course> courses) {
+//        this.courses = courses;
+//    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setSRN(String SRN) {
-        this.SRN = SRN;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+//    private Set<Course> courses = new HashSet<>();
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    private UserType userType;
+
+    private boolean active;
 
     public Long getId() {
         return id;
@@ -109,8 +131,5 @@ public class User {
     }
 
 
-    @Enumerated(EnumType.STRING)
-    private UserType userType;
 
-    private boolean active;
 }
