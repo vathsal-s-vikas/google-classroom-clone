@@ -5,6 +5,8 @@ import com.classroom.repository.UserRepository;
 
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
 
+@Getter
+@Setter
 @Service
 @AllArgsConstructor
 public class UserService implements UserDetailsService {
@@ -42,7 +46,7 @@ public class UserService implements UserDetailsService {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(name);
-            newUser.setUserType(UserType.STUDENT); // or default to whatever you want
+            // or default to whatever you want
 
             // Set a dummy password as it's not needed for OAuth users
             newUser.setPassword("OAUTH_USER");
