@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Select Role</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #43cea2, #185a9d);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2.5rem 3rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .role-option {
+            display: block;
+            margin: 1rem 0;
+            font-size: 1.1rem;
+            text-align: left;
+        }
+
+        .role-option input {
+            margin-right: 0.5rem;
+            transform: scale(1.2);
+        }
+
+        button {
+            margin-top: 1.5rem;
+            padding: 0.8rem 1.2rem;
+            width: 100%;
+            background-color: #185a9d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #144e84;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Select Your Role</h2>
+    <form method="POST" action="/assign-role">
+        <input type="hidden" name="email" th:value="${email}">
+
+        <label class="role-option">
+            <input type="radio" name="role" value="STUDENT" required>
+            Student
+        </label>
+        <label class="role-option">
+            <input type="radio" name="role" value="TEACHER" required>
+            Teacher
+        </label>
+        <label class="role-option">
+            <input type="radio" name="role" value="TA" required>
+            TA
+        </label>
+
+        <button type="submit">Continue</button>
+    </form>
+</div>
+
+</body>
+</html>

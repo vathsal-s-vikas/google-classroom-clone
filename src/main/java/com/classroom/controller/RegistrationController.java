@@ -35,6 +35,7 @@ public class RegistrationController {
     }
 
 
+
     @GetMapping("/oauth2/success")
     public String handleOAuth2Success(Authentication authentication) {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();

@@ -1,5 +1,6 @@
 package com.classroom.security;
 
+import com.classroom.service.OAuthCustomSuccessHandler;
 import com.classroom.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +21,13 @@ public class SecurityConfig {
 
     private final UserService appUserService;
     private final AuthenticationSuccessHandler customLoginSuccessHandler;
+    private final OAuthCustomSuccessHandler oAuthCustomSuccessHandler;
 
-    public SecurityConfig(UserService appUserService, AuthenticationSuccessHandler customLoginSuccessHandler) {
+
+    public SecurityConfig(UserService appUserService, AuthenticationSuccessHandler customLoginSuccessHandler, OAuthCustomSuccessHandler oAuthCustomSuccessHandler) {
         this.appUserService = appUserService;
         this.customLoginSuccessHandler = customLoginSuccessHandler;
+        this.oAuthCustomSuccessHandler = oAuthCustomSuccessHandler;
     }
 
     @Bean
@@ -54,7 +58,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> {
                     oauth2
                             .loginPage("/login")
-                            .defaultSuccessUrl("/oauth2/success", true); // you can change this to redirect after OAuth
+                            .successHandler(oAuthCustomSuccessHandler);
                 })
                 .build();
     }
