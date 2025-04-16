@@ -1,33 +1,48 @@
-HELP.md
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Ignore compiled class files
+*.class
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Ignore logs
+*.log
+logs/
+spring.log
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# Ignore IntelliJ IDEA files
+.idea/
 *.iml
-*.ipr
+*.iws
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# Ignore Eclipse files
+.project
+.classpath
+.c9/
+.settings/
 
-### VS Code ###
+# Ignore VS Code settings
 .vscode/
+
+# Ignore build directories
+/target/
+/out/
+/build/
+
+# Ignore OS-generated files
+.DS_Store
+Thumbs.db
+
+# Ignore application config
+src/main/resources/application.properties
+src/main/resources/application.yml
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore test reports
+/test-output/
+/surefire-reports/
+/jacoco.exec
+
+# Ignore generated files
+*.war
+*.jar
+*.ear
