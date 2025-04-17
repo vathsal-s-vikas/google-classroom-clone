@@ -1,24 +1,542 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>TA Dashboard</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Classroom | TA Dashboard</title>
+    
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf?.token}" />
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <style>
-        /* Reuse styles from student.html */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .topbar {
+            background-color: #3f51b5;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .topbar .right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #fff;
+            color: #3f51b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: none;
+            min-width: 120px;
+            z-index: 200;
+            margin-top: 8px;
+        }
+        
+        .dropdown.show {
+            display: block !important;
+        }
+        
+        .dropdown a {
+            display: block;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .dropdown a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background-color: #263238;
+            color: #ecf0f1;
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 1.5rem 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu a:hover, 
+        .sidebar-menu a.active {
+            background-color: rgba(255,255,255,0.05);
+            color: #fff;
+            border-left: 3px solid #3f51b5;
+        }
+        
+        .sidebar-menu a.active {
+            background-color: rgba(63, 81, 181, 0.15);
+        }
+        
+        .sidebar-menu .icon {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .content-header h2 {
+            margin: 0;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #3f51b5;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #303f9f;
+        }
+        
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .course-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .course-header {
+            height: 100px;
+            background-color: #3f51b5;
+            color: white;
+            padding: 1.2rem;
+            position: relative;
+        }
+        
+        .course-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .course-code {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.3rem;
+        }
+        
+        .course-body {
+            padding: 1.2rem;
+        }
+        
+        .course-teacher {
+            font-size: 0.9rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .teacher-avatar {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #3f51b5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+        
+        .grading-section {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .grading-section h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        
+        .grading-section h3 i {
+            margin-right: 0.5rem;
+            color: #3f51b5;
+        }
+        
+        .grading-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .grading-info {
+            flex: 1;
+        }
+        
+        .grading-title {
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+        
+        .grading-meta {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+        
+        .badge-pending {
+            background-color: #ffe0b2;
+            color: #e65100;
+        }
+        
+        .badge-graded {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .course-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.8rem 1.2rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .empty-state .icon {
+            font-size: 3.5rem;
+            color: #d1d9e6;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state p {
+            color: #777;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            bottom: 50px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 991px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="header">
-    <h1>TA Dashboard</h1>
-</div>
-<div class="container">
-    <h2>Courses You Assist</h2>
-    <div class="course" th:each="course : ${courses}">
-        <h3 th:text="${course.name}">Course Name</h3>
-        <p th:text="${course.description}">Course Description</p>
-        <a th:href="@{/course/manage/{id}(id=${course.id})}">Manage Course</a>
+
+<div class="topbar">
+    <div class="left">
+        <span>Classroom</span>
+    </div>
+    <div class="right">
+        <span th:text="${currentUser != null ? 'Welcome, ' + currentUser.name : 'Welcome, TA'}">Welcome, TA</span>
+        <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser != null && currentUser.name != null && !currentUser.name.isEmpty() ? currentUser.name.substring(0,1).toUpperCase() : 'T'}">T</div>
+        <div class="dropdown" id="avatarDropdown">
+            <a href="/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </div>
     </div>
 </div>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>TA Dashboard</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#" class="active">
+                    <span class="icon"><i class="fas fa-th-large"></i></span>
+                    <span>My Courses</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="icon"><i class="fas fa-tasks"></i></span>
+                    <span>Grading</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <span>Students</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="icon"><i class="fas fa-archive"></i></span>
+                    <span>Archived</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="content">
+        <div class="content-header">
+            <h2>Courses You Assist</h2>
+        </div>
+        
+        <div class="courses-grid" th:if="${not #lists.isEmpty(courses)}">
+            <a th:each="course : ${courses}" th:href="@{/ta/course/{id}(id=${course.id})}" class="course-card">
+                <div class="course-header">
+                    <div class="course-title" th:text="${course.name}">Computer Science 101</div>
+                    <div class="course-code" th:text="${course.courseCode}">CS101</div>
+                </div>
+                <div class="course-body">
+                    <div class="course-teacher">
+                        <div class="teacher-avatar" th:text="${course.teacher != null && course.teacher.name != null && !course.teacher.name.isEmpty() ? course.teacher.name.substring(0,1).toUpperCase() : 'T'}">T</div>
+                        <span th:text="${course.teacher != null ? 'Teacher: ' + course.teacher.name : 'Teacher: Unknown'}">Prof. Johnson</span>
+                    </div>
+                    <div class="pending-grading">
+                        <span th:if="${course.pendingGradings != null && course.pendingGradings > 0}" th:text="${course.pendingGradings + ' submissions to grade'}">5 submissions to grade</span>
+                        <span th:unless="${course.pendingGradings != null && course.pendingGradings > 0}">No pending submissions</span>
+                    </div>
+                </div>
+                <div class="course-footer">
+                    <span th:text="${course.createdAt != null ? #temporals.format(course.createdAt, 'MMM dd, yyyy') : 'Unknown date'}">May 15, 2023</span>
+                </div>
+            </a>
+        </div>
+        
+        <div th:if="${#lists.isEmpty(courses)}" class="empty-state">
+            <div class="icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <h3>No Courses Assigned</h3>
+            <p>You haven't been assigned to any courses as a teaching assistant yet.</p>
+        </div>
+        
+        <div class="grading-section" th:if="${not #lists.isEmpty(pendingGradings)}">
+            <h3><i class="fas fa-clipboard-check"></i> Pending Assignments to Grade</h3>
+            
+            <div class="grading-item" th:each="grading : ${pendingGradings}">
+                <div class="grading-info">
+                    <div class="grading-title" th:text="${(grading.assignment != null ? grading.assignment.title : 'Assignment') + ' - ' + (grading.student != null ? grading.student.name : 'Student')}">
+                        Introduction to Variables - John Doe
+                    </div>
+                    <div class="grading-meta">
+                        <span th:text="${'Course: ' + (grading.course != null ? grading.course.name : 'Unknown')}">Course: Computer Science 101</span>
+                        <span th:text="${'Submitted: ' + (grading.submittedAt != null ? #temporals.format(grading.submittedAt, 'MMM dd, yyyy') : 'Unknown')}">Submitted: May 28, 2023</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge badge-pending">Pending</span>
+                    <a th:href="@{/ta/grade/{id}(id=${grading.id})}" class="btn btn-primary">Grade</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grading-section" th:if="${#lists.isEmpty(pendingGradings)}">
+            <h3><i class="fas fa-clipboard-check"></i> Pending Assignments to Grade</h3>
+            <div class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <h3>No Pending Submissions</h3>
+                <p>You're all caught up! There are no pending assignments to grade.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">Operation successful!</div>
+
+<script>
+    // Toggle dropdown menu
+    function toggleDropdown() {
+        const dropdown = document.getElementById('avatarDropdown');
+        dropdown.classList.toggle('show');
+    }
+    
+    // Close dropdown if clicked outside
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('avatarDropdown');
+        if (!e.target.closest('.avatar') && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    });
+    
+    // Show toast message
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        
+        if (type === 'error') {
+            toast.style.backgroundColor = '#dc3545';
+        } else {
+            toast.style.backgroundColor = '#4CAF50';
+        }
+        
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+</script>
+
 </body>
 </html>

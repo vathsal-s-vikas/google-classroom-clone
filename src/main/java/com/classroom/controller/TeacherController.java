@@ -268,4 +268,156 @@ public class TeacherController {
         // Generate a random invite code
         return UUID.randomUUID().toString().substring(0, 8);
     }
+
+    @DeleteMapping("/delete-course/{courseId}")
+    @Transactional
+    public ResponseEntity<?> deleteCourse(@PathVariable Long courseId) {
+        try {
+            System.out.println("Received request to delete course with ID: " + courseId);
+            
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final User currentUser = getUserFromAuthentication(auth);
+            
+            System.out.println("User attempting to delete course: " + currentUser.getEmail());
+            
+            // Get the course
+            Course course = courseService.getCourseById(courseId);
+            System.out.println("Found course: " + course.getName() + " (ID: " + course.getId() + ")");
+            System.out.println("Course teacher ID: " + course.getTeacher().getId());
+            System.out.println("Current user ID: " + currentUser.getId());
+            
+            // Verify the current user is the teacher of this course
+            if (!course.getTeacher().getId().equals(currentUser.getId())) {
+                System.out.println("Authorization failed: User is not the course teacher");
+                return ResponseEntity.status(403).body("You are not authorized to delete this course");
+            }
+            
+            // Delete all course memberships
+            List<CourseMembership> memberships = courseMembershipService.getMembershipsByCourse(course);
+            System.out.println("Deleting " + memberships.size() + " course memberships");
+            
+            for (CourseMembership membership : memberships) {
+                System.out.println("Deleting membership ID: " + membership.getId());
+                courseMembershipService.removeMembership(membership.getId());
+            }
+            
+            // Delete the course
+            System.out.println("Now deleting the course itself");
+            courseService.deleteCourse(courseId);
+            
+            System.out.println("Course deletion completed successfully");
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.err.println("Error deleting course: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error deleting course: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/archived-courses")
+    public ResponseEntity<List<CourseDTO>> getArchivedCourses() {
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        final User currentUser = getUserFromAuthentication(auth);
+        
+        List<Course> archivedCourses = courseService.getArchivedCoursesByTeacher(currentUser);
+        List<CourseDTO> courseDTOs = archivedCourses.stream()
+                .map(CourseDTO::fromEntity)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(courseDTOs);
+    }
+    
+    @GetMapping("/active-courses")
+    public ResponseEntity<List<CourseDTO>> getActiveCourses() {
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        final User currentUser = getUserFromAuthentication(auth);
+        
+        List<Course> activeCourses = courseService.getActiveCoursesByTeacher(currentUser);
+        List<CourseDTO> courseDTOs = activeCourses.stream()
+                .map(CourseDTO::fromEntity)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(courseDTOs);
+    }
+    
+    @PutMapping("/archive-course/{courseId}")
+    @Transactional
+    public ResponseEntity<?> archiveCourse(@PathVariable Long courseId) {
+        try {
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final User currentUser = getUserFromAuthentication(auth);
+            
+            // Get the course
+            Course course = courseService.getCourseById(courseId);
+            
+            // Verify the current user is the teacher of this course
+            if (!course.getTeacher().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(403).body("You are not authorized to archive this course");
+            }
+            
+            // Archive the course
+            course.setArchived(true);
+            courseService.createCourse(course); // This will update the existing course
+            
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error archiving course: " + e.getMessage());
+        }
+    }
+    
+    @PutMapping("/unarchive-course/{courseId}")
+    @Transactional
+    public ResponseEntity<?> unarchiveCourse(@PathVariable Long courseId) {
+        try {
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final User currentUser = getUserFromAuthentication(auth);
+            
+            // Get the course
+            Course course = courseService.getCourseById(courseId);
+            
+            // Verify the current user is the teacher of this course
+            if (!course.getTeacher().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(403).body("You are not authorized to unarchive this course");
+            }
+            
+            // Unarchive the course
+            course.setArchived(false);
+            courseService.createCourse(course); // This will update the existing course
+            
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error unarchiving course: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<CourseDTO> getCourseDetails(@PathVariable Long courseId) {
+        try {
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final User currentUser = getUserFromAuthentication(auth);
+            
+            // Get the course
+            Course course = courseService.getCourseById(courseId);
+            
+            // Verify the current user is the teacher of this course or a member
+            if (!course.getTeacher().getId().equals(currentUser.getId())) {
+                // Check if the user is a member of the course
+                boolean isMember = courseMembershipService.getMembershipsByUser(currentUser)
+                    .stream()
+                    .anyMatch(membership -> membership.getCourse().getId().equals(courseId));
+                
+                if (!isMember) {
+                    return ResponseEntity.status(403).body(null);
+                }
+            }
+            
+            CourseDTO courseDTO = CourseDTO.fromEntity(course);
+            return ResponseEntity.ok(courseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
 }

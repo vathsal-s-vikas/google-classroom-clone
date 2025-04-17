@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Signup Form</title>
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf?.token}" />
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -161,31 +164,112 @@
         const confirmPassword = document.getElementById('passwordcon').value;
         const userType = document.getElementById('userType').value;
 
+        console.log("Form values before validation:");
+        console.log("Name:", name);
+        console.log("Email:", email);
+        console.log("Password length:", password ? password.length : 0);
+        console.log("Confirm password length:", confirmPassword ? confirmPassword.length : 0);
+        console.log("User type:", userType);
+
         if (password !== confirmPassword) {
             alert("Passwords do not match!");
             return;
         }
 
+        // Validate all fields are filled
+        if (!name || !email || !password || !userType) {
+            alert("Please fill in all fields");
+            console.error("Missing required field:", {
+                name: !name, 
+                email: !email, 
+                password: !password, 
+                userType: !userType
+            });
+            return;
+        }
+
         const data = {
-            name,
-            email,
-            password,
-            userType,
+            name: name,
+            email: email,
+            password: password,
+            userType: userType
         };
 
+        // Debug what's being sent
+        const dataCopy = {...data, password: data.password ? '********' : null};
+        console.log("Data to be sent:", dataCopy);
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Add CSRF token if available
+        if (csrfToken) {
+            headers[csrfHeader] = csrfToken;
+        }
+
+        // Prepare JSON string manually to ensure all fields are included
+        const jsonData = JSON.stringify({
+            name: name,
+            email: email,
+            password: password,
+            userType: userType
+        });
+        
+        console.log("JSON data (password masked):", jsonData.replace(password, "********"));
+
+        // Submit registration directly
+        console.log("Proceeding with registration");
+        
         fetch('/req/signup', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+            headers: headers,
+            body: jsonData
         })
         .then(response => {
+            console.log("Response status:", response.status);
+            console.log("Response headers:", JSON.stringify([...response.headers]));
+            
+            // Try to determine content type
+            const contentType = response.headers.get('content-type');
+            console.log("Content type:", contentType);
+            
             if (response.ok) {
-                alert("Signup successful!");
-                window.location.href = "/login";
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(data => {
+                        console.log("Registration successful:", data);
+                        alert("Signup successful! Redirecting to login page.");
+                        window.location.href = "/login";
+                    });
+                } else {
+                    return response.text().then(text => {
+                        console.log("Non-JSON success response:", text);
+                        alert("Signup successful! Redirecting to login page.");
+                        window.location.href = "/login";
+                    });
+                }
             } else {
-                alert("Signup failed. Please try again.");
+                return response.text().then(text => {
+                    console.error("Registration failed:", text);
+                    
+                    try {
+                        // Try to parse as JSON
+                        const jsonError = JSON.parse(text);
+                        alert("Signup failed: " + (jsonError.message || JSON.stringify(jsonError)));
+                    } catch (e) {
+                        // If not JSON, show the text
+                        if (text.includes("<!DOCTYPE html>")) {
+                            alert("Server error. Please try again later.");
+                            console.error("HTML error response received");
+                        } else {
+                            alert("Signup failed: " + text);
+                        }
+                    }
+                });
             }
         })
         .catch(err => {

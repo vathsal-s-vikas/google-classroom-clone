@@ -2,6 +2,7 @@ package com.classroom.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,7 +34,10 @@ public class User {
 
     private String oauthId;
 
-    @JsonIgnore
+    // Use JsonProperty to control the password field
+    // This allows the password to be deserialized (read from JSON)
+    // but not serialized (written to JSON) by default
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
 

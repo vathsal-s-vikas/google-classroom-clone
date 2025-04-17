@@ -1,166 +1,570 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Classroom - Student Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Classroom | Student Dashboard</title>
+    
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf?.token}" />
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Segoe UI', sans-serif;
             background-color: #f4f6f9;
-            display: flex;
-            height: 100vh;
+            margin: 0;
+            line-height: 1.6;
         }
-
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
+        
+        .topbar {
             background-color: #3f51b5;
             color: white;
-            padding: 1rem;
-            transition: transform 0.3s ease;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-
-        .sidebar h2 {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
+        
+        .topbar .right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
         }
-
-        .sidebar ul {
-            list-style: none;
-        }
-
-        .sidebar ul li {
-            margin: 1rem 0;
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #fff;
+            color: #3f51b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
             cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 5px;
-            transition: background-color 0.3s;
         }
-
-        .sidebar ul li:hover {
-            background-color: rgba(255, 255, 255, 0.2);
+        
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: none;
+            min-width: 120px;
+            z-index: 200;
+            margin-top: 8px;
         }
-
-        /* Main content */
-        .main {
-            flex-grow: 1;
-            padding: 1.5rem;
+        
+        .dropdown.show {
+            display: block !important;
         }
-
-        .header {
+        
+        .dropdown a {
+            display: block;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .dropdown a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background-color: #263238;
+            color: #ecf0f1;
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 1.5rem 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu a:hover, 
+        .sidebar-menu a.active {
+            background-color: rgba(255,255,255,0.05);
+            color: #fff;
+            border-left: 3px solid #3f51b5;
+        }
+        
+        .sidebar-menu a.active {
+            background-color: rgba(63, 81, 181, 0.15);
+        }
+        
+        .sidebar-menu .icon {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .content-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
         }
-
-        .header h1 {
-            color: #3f51b5;
+        
+        .content-header h2 {
+            margin: 0;
+            color: #333;
+            font-weight: 500;
         }
-
-        .join-btn {
-            padding: 0.5rem 1rem;
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
             background-color: #3f51b5;
             color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
         }
-
-        .join-btn:hover {
+        
+        .btn-primary:hover {
             background-color: #303f9f;
         }
-
-        .class-container {
+        
+        .courses-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 1.2rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
-
-        .class-card {
-            background-color: white;
-            border-left: 6px solid #3f51b5;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 1rem;
+        
+        .course-card {
+            background-color: #fff;
             border-radius: 8px;
-            transition: transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
         }
-
-        .class-card:hover {
-            transform: scale(1.02);
+        
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-
-        .class-card h3 {
-            color: #333;
+        
+        .course-header {
+            height: 100px;
+            background-color: #3f51b5;
+            color: white;
+            padding: 1.2rem;
+            position: relative;
+        }
+        
+        .course-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .course-code {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.3rem;
+        }
+        
+        .course-body {
+            padding: 1.2rem;
+        }
+        
+        .course-teacher {
+            font-size: 0.9rem;
+            color: #555;
+            display: flex;
+            align-items: center;
             margin-bottom: 0.5rem;
         }
-
-        .class-card p {
+        
+        .teacher-avatar {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #3f51b5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+        
+        .course-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.8rem 1.2rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .empty-state .icon {
+            font-size: 3.5rem;
+            color: #d1d9e6;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state p {
             color: #777;
-            font-size: 0.9rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            bottom: 50px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 991px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar">
-    <h2>Assignments</h2>
-    <ul>
-        <li>Upcoming</li>
-        <li>Submitted</li>
-        <li>Grades</li>
-    </ul>
-</div>
-
-<!-- Main Content -->
-<div class="main">
-    <div class="header">
-        <h1>Classroom</h1>
-        <button class="join-btn" onclick="joinClass()">+ Join Class</button>
+<div class="topbar">
+    <div class="left">
+        <span>Classroom</span>
     </div>
-
-    <div class="class-container" id="classContainer">
-        <!-- Class Cards will be dynamically inserted here -->
+    <div class="right">
+        <span th:text="${currentUser != null ? 'Welcome, ' + currentUser.name : 'Welcome, Student'}">Welcome, Student</span>
+        <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser != null && currentUser.name != null && !currentUser.name.isEmpty() ? currentUser.name.substring(0,1).toUpperCase() : 'S'}">S</div>
+        <div class="dropdown" id="avatarDropdown">
+            <a href="/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </div>
     </div>
 </div>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Student Dashboard</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#" class="active">
+                    <span class="icon"><i class="fas fa-th-large"></i></span>
+                    <span>My Classes</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="icon"><i class="fas fa-tasks"></i></span>
+                    <span>Assignments</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="icon"><i class="fas fa-trophy"></i></span>
+                    <span>Grades</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="icon"><i class="fas fa-archive"></i></span>
+                    <span>Archived</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="content">
+        <div class="content-header">
+            <h2>My Classes</h2>
+            <button class="btn btn-primary" onclick="openJoinModal()">
+                <i class="fas fa-plus"></i> Join Class
+            </button>
+        </div>
+        
+        <div class="courses-grid" th:if="${not #lists.isEmpty(courses)}">
+            <a th:each="course : ${courses}" th:href="@{/student/course/{id}(id=${course.id})}" class="course-card">
+                <div class="course-header">
+                    <div class="course-title" th:text="${course.name}">Mathematics 101</div>
+                    <div class="course-code" th:text="${course.courseCode}">MATH101</div>
+                </div>
+                <div class="course-body">
+                    <div class="course-teacher">
+                        <div class="teacher-avatar" th:text="${course.teacher != null && course.teacher.name != null && !course.teacher.name.isEmpty() ? course.teacher.name.substring(0,1).toUpperCase() : 'T'}">T</div>
+                        <span th:text="${course.teacher != null ? course.teacher.name : 'Teacher'}">Mrs. Smith</span>
+                    </div>
+                </div>
+                <div class="course-footer">
+                    <span th:text="${course.createdAt != null ? #temporals.format(course.createdAt, 'MMM dd, yyyy') : 'Unknown date'}">May 15, 2023</span>
+                </div>
+            </a>
+        </div>
+        
+        <div th:if="${#lists.isEmpty(courses)}" class="empty-state">
+            <div class="icon">
+                <i class="fas fa-book-reader"></i>
+            </div>
+            <h3>No Classes Yet</h3>
+            <p>You haven't joined any classes yet. Use the "Join Class" button to get started.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Join Class Modal -->
+<div id="joinModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Join a Class</h2>
+        <form id="joinForm">
+            <div class="form-group">
+                <label for="classCode">Class Code</label>
+                <input type="text" id="classCode" name="classCode" placeholder="Enter the class code provided by your teacher" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Join</button>
+        </form>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">Operation successful!</div>
 
 <script>
-    const classes = [
-        { title: 'Math 101', description: 'Algebra & Geometry' },
-        { title: 'History of Art', description: 'Renaissance to Modern' },
-        { title: 'Physics Basics', description: 'Motion & Energy' },
-    ];
-
-    function loadClasses() {
-        const container = document.getElementById('classContainer');
-        classes.forEach(cls => {
-            const card = document.createElement('div');
-            card.className = 'class-card';
-            card.innerHTML = `<h3>${cls.title}</h3><p>${cls.description}</p>`;
-            container.appendChild(card);
-        });
+    // Toggle dropdown menu
+    function toggleDropdown() {
+        const dropdown = document.getElementById('avatarDropdown');
+        dropdown.classList.toggle('show');
     }
-
-    function joinClass() {
-        const title = prompt("Enter Class Title:");
-        const description = prompt("Enter Class Description:");
-        if (title && description) {
-            classes.push({ title, description });
-            document.getElementById('classContainer').innerHTML = '';
-            loadClasses();
+    
+    // Close dropdown if clicked outside
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('avatarDropdown');
+        if (!e.target.closest('.avatar') && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
         }
+    });
+    
+    // Modal functions
+    function openJoinModal() {
+        document.getElementById('joinModal').style.display = 'block';
     }
-
-    window.onload = loadClasses;
+    
+    function closeModal() {
+        document.getElementById('joinModal').style.display = 'none';
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeModal();
+        }
+    });
+    
+    // Show toast message
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        
+        if (type === 'error') {
+            toast.style.backgroundColor = '#dc3545';
+        } else {
+            toast.style.backgroundColor = '#4CAF50';
+        }
+        
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Join Class Form Submission
+    document.getElementById('joinForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const classCode = document.getElementById('classCode').value;
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Make API call to join class
+        fetch('/api/student/join-course', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            },
+            body: JSON.stringify({ inviteCode: classCode })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.text().then(text => {
+                    throw new Error(text || 'Failed to join class');
+                });
+            }
+        })
+        .then(data => {
+            showToast('Successfully joined the class!');
+            closeModal();
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        })
+        .catch(error => {
+            showToast(error.message || 'Error joining class. Please check the code and try again.', 'error');
+            console.error('Error:', error);
+        });
+    });
 </script>
 
 </body>

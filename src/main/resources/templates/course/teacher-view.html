@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${course.name + ' - Teacher View'}">Course - Teacher View</title>
+    
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf?.token}" />
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .topbar {
+            background-color: #3f51b5;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .topbar .left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .back-button {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+        }
+        
+        .right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #fff;
+            color: #3f51b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: none;
+            min-width: 120px;
+            z-index: 200;
+            margin-top: 8px;
+        }
+        
+        .dropdown.show {
+            display: block !important;
+        }
+        
+        .dropdown a {
+            display: block;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .dropdown a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .course-info h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .course-code {
+            background-color: #e9ecef;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 2rem;
+        }
+        
+        .tab {
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6c757d;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #3f51b5;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #3f51b5;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stream-item {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            padding: 1rem 0;
+        }
+        
+        .stream-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stream-icon {
+            font-size: 1.5rem;
+            color: #3f51b5;
+            margin-right: 1rem;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .stream-content {
+            flex: 1;
+        }
+        
+        .stream-title {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stream-date {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .student-list {
+            list-style: none;
+        }
+        
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .student-item:last-child {
+            border-bottom: none;
+        }
+        
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #3f51b5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+        
+        .student-info {
+            flex: 1;
+        }
+        
+        .student-name {
+            font-weight: 500;
+        }
+        
+        .student-email {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #3f51b5;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #303f9f;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #3f51b5;
+            color: #3f51b5;
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(63, 81, 181, 0.1);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #adb5bd;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        
+        /* Assignment styles */
+        .assignment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            background-color: white;
+        }
+        
+        .assignment-info h3 {
+            margin-bottom: 0.3rem;
+        }
+        
+        .assignment-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .assignment-type {
+            background-color: #e9ecef;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 600px;
+            max-width: 90%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="left">
+        <a href="/dashboard/teacher" class="back-button">
+            <i class="fas fa-arrow-left"></i>&nbsp; Back to Dashboard
+        </a>
+    </div>
+    <div class="right">
+        <span th:text="'Welcome, ' + ${currentUser.name}">Welcome, Teacher</span>
+        <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser.name.substring(0,1).toUpperCase()}">T</div>
+        <div class="dropdown" id="avatarDropdown">
+            <a href="/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="course-header">
+        <div class="course-info">
+            <h1 th:text="${course.name}">Course Name</h1>
+            <span class="course-code" th:text="${'Code: ' + course.courseCode}">Code: CS101</span>
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-outline" onclick="openInviteModal()">
+                <i class="fas fa-user-plus"></i> Invite Students
+            </button>
+            <button class="btn btn-primary" onclick="openAssignmentModal()">
+                <i class="fas fa-plus"></i> Create Assignment
+            </button>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="stream">Stream</div>
+        <div class="tab" data-tab="assignments">Assignments</div>
+        <div class="tab" data-tab="students">Students</div>
+        <div class="tab" data-tab="content">Content</div>
+    </div>
+    
+    <!-- Stream Tab -->
+    <div class="tab-content active" id="stream">
+        <div class="card">
+            <div class="stream-item">
+                <div class="stream-icon">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <div class="stream-content">
+                    <div class="stream-title">Welcome to the course!</div>
+                    <div class="stream-text">This is your course stream where announcements and activities will appear.</div>
+                    <div class="stream-date">Posted on: Today</div>
+                </div>
+            </div>
+        </div>
+        
+        <div th:if="${assignments.empty}" class="empty-state">
+            <i class="far fa-bell-slash"></i>
+            <h3>No Recent Activity</h3>
+            <p>When you add assignments or make announcements, they'll appear here.</p>
+        </div>
+    </div>
+    
+    <!-- Assignments Tab -->
+    <div class="tab-content" id="assignments">
+        <div class="card">
+            <button class="btn btn-primary" onclick="openAssignmentModal()">
+                <i class="fas fa-plus"></i> Create New Assignment
+            </button>
+            
+            <div th:if="${!assignments.empty}" style="margin-top: 1.5rem;">
+                <div class="assignment-item" th:each="assignment : ${assignments}">
+                    <div class="assignment-info">
+                        <h3 th:text="${assignment.title}">Assignment Title</h3>
+                        <div class="assignment-meta">
+                            <span th:text="${'Due: ' + #temporals.format(assignment.deadline, 'MMM dd, yyyy')}">Due: May 15, 2023</span>
+                            <span th:text="${'Points: ' + assignment.maxMarks}">Points: 100</span>
+                            <span class="assignment-type" th:text="${assignment.assignmentType}">INDIVIDUAL</span>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-outline" th:attr="onclick='editAssignment(' + ${assignment.id} + ')'">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${assignments.empty}" class="empty-state">
+                <i class="fas fa-tasks"></i>
+                <h3>No Assignments Yet</h3>
+                <p>Create your first assignment to get started.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Students Tab -->
+    <div class="tab-content" id="students">
+        <div class="card">
+            <button class="btn btn-primary" onclick="openInviteModal()">
+                <i class="fas fa-user-plus"></i> Invite Students
+            </button>
+            
+            <div th:if="${!students.empty}" style="margin-top: 1.5rem;">
+                <ul class="student-list">
+                    <li class="student-item" th:each="membership : ${students}">
+                        <div class="student-avatar" th:text="${membership.user.name.substring(0,1).toUpperCase()}">S</div>
+                        <div class="student-info">
+                            <div class="student-name" th:text="${membership.user.name}">Student Name</div>
+                            <div class="student-email" th:text="${membership.user.email}">student@example.com</div>
+                        </div>
+                        <div class="student-joined" th:text="${'Joined: ' + #temporals.format(membership.joinedAt, 'MMM dd, yyyy')}">Joined: May 10, 2023</div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div th:if="${students.empty}" class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>No Students Enrolled</h3>
+                <p>Share the invite code with students to join this course.</p>
+                <div style="margin-top: 1rem; background-color: #f8f9fa; padding: 1rem; border-radius: 4px; display: inline-block;">
+                    <span th:text="${'Invite Code: ' + course.inviteCode}" style="font-weight: bold;">Invite Code: ABC123</span>
+                    <button class="btn btn-outline" style="margin-left: 1rem;" onclick="copyInviteCode()">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Content Tab -->
+    <div class="tab-content" id="content">
+        <div class="card">
+            <button class="btn btn-primary" onclick="openContentModal()">
+                <i class="fas fa-plus"></i> Add Content
+            </button>
+            
+            <div class="empty-state">
+                <i class="fas fa-book"></i>
+                <h3>No Content Added</h3>
+                <p>Add study materials, links, or files for your students.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Assignment Modal -->
+<div id="assignmentModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModals()">&times;</span>
+        <h2>Create New Assignment</h2>
+        <form id="assignmentForm">
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="instructions">Instructions</label>
+                <textarea id="instructions" name="instructions" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="assignmentType">Type</label>
+                <select id="assignmentType" name="assignmentType" required>
+                    <option value="INDIVIDUAL">Individual</option>
+                    <option value="GROUP">Group</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="maxMarks">Maximum Marks</label>
+                <input type="number" id="maxMarks" name="maxMarks" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="deadline">Deadline</label>
+                <input type="datetime-local" id="deadline" name="deadline" required>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="lateSubmissionAllowed" name="lateSubmissionAllowed">
+                    Allow Late Submissions
+                </label>
+            </div>
+            <div id="lateSubmissionOptions" style="display: none;">
+                <div class="form-group">
+                    <label for="latePenaltyPercentage">Late Penalty (%)</label>
+                    <input type="number" id="latePenaltyPercentage" name="latePenaltyPercentage" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="maxLateDays">Maximum Late Days</label>
+                    <input type="number" id="maxLateDays" name="maxLateDays" min="1">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Assignment</button>
+        </form>
+    </div>
+</div>
+
+<!-- Invite Modal -->
+<div id="inviteModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModals()">&times;</span>
+        <h2>Invite Students</h2>
+        <p>Share this invite code with your students:</p>
+        <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 1rem 0; display: flex; justify-content: space-between; align-items: center;">
+            <span id="inviteCode" th:text="${course.inviteCode}" style="font-weight: bold; font-size: 1.2rem;">ABC123</span>
+            <button class="btn btn-outline" onclick="copyInviteCode()">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </div>
+        <p>Or add students manually:</p>
+        <form id="inviteForm">
+            <div class="form-group">
+                <label for="studentEmail">Student Email</label>
+                <input type="email" id="studentEmail" name="studentEmail" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Student</button>
+        </form>
+    </div>
+</div>
+
+<!-- Content Modal -->
+<div id="contentModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModals()">&times;</span>
+        <h2>Add Content</h2>
+        <form id="contentForm">
+            <div class="form-group">
+                <label for="contentTitle">Title</label>
+                <input type="text" id="contentTitle" name="contentTitle" required>
+            </div>
+            <div class="form-group">
+                <label for="contentDescription">Description</label>
+                <textarea id="contentDescription" name="contentDescription" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="contentType">Type</label>
+                <select id="contentType" name="contentType" required>
+                    <option value="LINK">Link</option>
+                    <option value="FILE">File</option>
+                    <option value="TEXT">Text Content</option>
+                </select>
+            </div>
+            <div id="linkContent" class="form-group">
+                <label for="link">URL</label>
+                <input type="url" id="link" name="link">
+            </div>
+            <div id="fileContent" class="form-group" style="display: none;">
+                <label for="file">File</label>
+                <input type="file" id="file" name="file">
+            </div>
+            <div id="textContent" class="form-group" style="display: none;">
+                <label for="textContent">Content</label>
+                <textarea id="textContentArea" name="textContent" rows="5"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Content</button>
+        </form>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">Operation successful!</div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and tab contents
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab).classList.add('active');
+        });
+    });
+    
+    // Toggle dropdown menu
+    function toggleDropdown() {
+        const dropdown = document.getElementById('avatarDropdown');
+        dropdown.classList.toggle('show');
+    }
+    
+    // Close dropdown if clicked outside
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('avatarDropdown');
+        if (!e.target.closest('.avatar') && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    });
+    
+    // Modal functions
+    function openAssignmentModal() {
+        document.getElementById('assignmentModal').style.display = 'block';
+    }
+    
+    function openInviteModal() {
+        document.getElementById('inviteModal').style.display = 'block';
+    }
+    
+    function openContentModal() {
+        document.getElementById('contentModal').style.display = 'block';
+    }
+    
+    function closeModals() {
+        document.getElementById('assignmentModal').style.display = 'none';
+        document.getElementById('inviteModal').style.display = 'none';
+        document.getElementById('contentModal').style.display = 'none';
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeModals();
+        }
+    });
+    
+    // Toggle late submission options
+    document.getElementById('lateSubmissionAllowed').addEventListener('change', function() {
+        const lateOptions = document.getElementById('lateSubmissionOptions');
+        lateOptions.style.display = this.checked ? 'block' : 'none';
+    });
+    
+    // Toggle content type options
+    document.getElementById('contentType').addEventListener('change', function() {
+        const linkContent = document.getElementById('linkContent');
+        const fileContent = document.getElementById('fileContent');
+        const textContent = document.getElementById('textContent');
+        
+        linkContent.style.display = 'none';
+        fileContent.style.display = 'none';
+        textContent.style.display = 'none';
+        
+        switch(this.value) {
+            case 'LINK':
+                linkContent.style.display = 'block';
+                break;
+            case 'FILE':
+                fileContent.style.display = 'block';
+                break;
+            case 'TEXT':
+                textContent.style.display = 'block';
+                break;
+        }
+    });
+    
+    // Copy invite code
+    function copyInviteCode() {
+        const inviteCode = document.getElementById('inviteCode').textContent;
+        navigator.clipboard.writeText(inviteCode)
+            .then(() => {
+                showToast('Invite code copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+                showToast('Failed to copy invite code', 'error');
+            });
+    }
+    
+    // Show toast message
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        
+        if (type === 'error') {
+            toast.style.backgroundColor = '#dc3545';
+        } else {
+            toast.style.backgroundColor = '#4CAF50';
+        }
+        
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Form submissions
+    document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // TODO: Implement assignment creation via API
+        showToast('Assignment created successfully!');
+        closeModals();
+    });
+    
+    document.getElementById('inviteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // TODO: Implement student invitation via API
+        showToast('Invitation sent successfully!');
+        closeModals();
+    });
+    
+    document.getElementById('contentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // TODO: Implement content addition via API
+        showToast('Content added successfully!');
+        closeModals();
+    });
+</script>
+
+</body>
+</html> 

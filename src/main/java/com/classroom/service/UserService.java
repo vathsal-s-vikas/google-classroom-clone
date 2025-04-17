@@ -41,8 +41,9 @@ public class UserService implements UserDetailsService {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(name);
-            // or default to whatever you want
-
+            newUser.setActive(true);
+            newUser.setGoogleLinked(true);
+            
             // Set a dummy password as it's not needed for OAuth users
             newUser.setPassword("OAUTH_USER");
 

@@ -54,7 +54,7 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
-                    registry.requestMatchers("/req/signup", "/css/**", "/js/**", "/login", "/oauth2/**").permitAll();
+                    registry.requestMatchers("/signup", "/req/signup", "/debug/**", "/css/**", "/js/**", "/login", "/oauth2/**").permitAll();
                     registry.requestMatchers("/api/**").authenticated();
                     registry.requestMatchers("/dashboard/**").authenticated();
                     registry.requestMatchers("/test-course-creation").authenticated();
