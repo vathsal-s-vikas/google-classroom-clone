@@ -1,7 +1,24 @@
 <!DOCTYPE html>
-<html>
-<head><title>TA Dashboard</title></head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>TA Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Reuse styles from student.html */
+    </style>
+</head>
 <body>
-<h1>Welcome, TA!</h1>
+<div class="header">
+    <h1>TA Dashboard</h1>
+</div>
+<div class="container">
+    <h2>Courses You Assist</h2>
+    <div class="course" th:each="course : ${courses}">
+        <h3 th:text="${course.name}">Course Name</h3>
+        <p th:text="${course.description}">Course Description</p>
+        <a th:href="@{/course/manage/{id}(id=${course.id})}">Manage Course</a>
+    </div>
+</div>
 </body>
 </html>

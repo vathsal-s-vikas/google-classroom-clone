@@ -2,6 +2,7 @@ package com.classroom.service;
 import com.classroom.model.User;
 import com.classroom.model.UserType;
 import com.classroom.repository.UserRepository;
+import com.classroom.security.CustomUserDetails;
 
 
 import lombok.AllArgsConstructor;
@@ -27,17 +28,11 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<User> user = repository.findByEmail(email);
         if (user.isPresent()) {
-            var userObj = user.get();
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(userObj.getEmail())
-                    .password(userObj.getPassword())
-                    .roles("USER") // You can replace this with dynamic roles later
-                    .build();
+            return new CustomUserDetails(user.get());
         } else {
             throw new UsernameNotFoundException(email);
         }
     }
-
 
     public void processOAuthPostLogin(String email, String name) {
         Optional<User> existingUser = repository.findByEmail(email);
@@ -54,15 +49,4 @@ public class UserService implements UserDetailsService {
             repository.save(newUser);
         }
     }
-//    @Autowired
-//    private UserRepository userRepository;
-//
-//    @Autowired
-//    private PasswordEncoder passwordEncoder;
-//
-//    public void register(User user) {
-//        // Hash the password before saving
-//        //user.setPassword(passwordEncoder.encode(user.getPassword()));
-//        userRepository.save(user);
-//    }
 }

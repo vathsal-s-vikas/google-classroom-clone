@@ -1,5 +1,7 @@
 package com.classroom.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,6 +16,7 @@ import java.util.*;
 @AllArgsConstructor
 @Builder
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,7 +33,7 @@ public class User {
 
     private String oauthId;
 
-
+    @JsonIgnore
     private String password;
 
 
@@ -45,25 +48,48 @@ public class User {
 
     // Bidirectional relationships
     @OneToMany(mappedBy = "teacher")
+    @JsonIgnore
     private Set<Course> taughtCourses = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private Set<CourseMembership> courseMemberships = new HashSet<>();
 
     @OneToMany(mappedBy = "uploader")
+    @JsonIgnore
     private Set<Content> uploadedContents = new HashSet<>();
 
     @OneToMany(mappedBy = "createdBy")
+    @JsonIgnore
     private Set<Team> createdTeams = new HashSet<>();
 
     @OneToMany(mappedBy = "student")
+    @JsonIgnore
     private Set<TeamMembership> teamMemberships = new HashSet<>();
 
     @OneToMany(mappedBy = "student")
+    @JsonIgnore
     private Set<Submission> individualSubmissions = new HashSet<>();
 
     @OneToMany(mappedBy = "evaluator")
+    @JsonIgnore
     private Set<Mark> evaluatedSubmissions = new HashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    @JsonIgnore
+    private Set<Notification> notifications = new HashSet<>();
+
+    @OneToMany(mappedBy = "ta")
+    @JsonIgnore
+    private Set<TAStudentAssignment> assignedStudents = new HashSet<>();
+
+    @OneToMany(mappedBy = "student")
+    @JsonIgnore
+    private Set<TAStudentAssignment> assignedTA = new HashSet<>();
+
+    @OneToMany(mappedBy = "ta")
+    @JsonIgnore
+    private Set<PermissionSettings> permissions = new HashSet<>();
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
@@ -160,19 +186,6 @@ public class User {
     public void setPermissions(Set<PermissionSettings> permissions) {
         this.permissions = permissions;
     }
-
-    @OneToMany(mappedBy = "user")
-    private Set<Notification> notifications = new HashSet<>();
-
-    @OneToMany(mappedBy = "ta")
-    private Set<TAStudentAssignment> assignedStudents = new HashSet<>();
-
-    @OneToMany(mappedBy = "student")
-    private Set<TAStudentAssignment> assignedTA = new HashSet<>();
-
-    @OneToMany(mappedBy = "ta")
-    private Set<PermissionSettings> permissions = new HashSet<>();
-
 
     public Long getId() {
         return id;

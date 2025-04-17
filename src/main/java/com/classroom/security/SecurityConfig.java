@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -22,12 +23,17 @@ public class SecurityConfig {
     private final UserService appUserService;
     private final AuthenticationSuccessHandler customLoginSuccessHandler;
     private final OAuthCustomSuccessHandler oAuthCustomSuccessHandler;
+    private final CustomAuthenticationFilter customAuthenticationFilter;
 
-
-    public SecurityConfig(UserService appUserService, AuthenticationSuccessHandler customLoginSuccessHandler, OAuthCustomSuccessHandler oAuthCustomSuccessHandler) {
+    public SecurityConfig(
+            UserService appUserService, 
+            AuthenticationSuccessHandler customLoginSuccessHandler, 
+            OAuthCustomSuccessHandler oAuthCustomSuccessHandler,
+            CustomAuthenticationFilter customAuthenticationFilter) {
         this.appUserService = appUserService;
         this.customLoginSuccessHandler = customLoginSuccessHandler;
         this.oAuthCustomSuccessHandler = oAuthCustomSuccessHandler;
+        this.customAuthenticationFilter = customAuthenticationFilter;
     }
 
     @Bean
@@ -49,6 +55,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
                     registry.requestMatchers("/req/signup", "/css/**", "/js/**", "/login", "/oauth2/**").permitAll();
+                    registry.requestMatchers("/api/**").authenticated();
+                    registry.requestMatchers("/dashboard/**").authenticated();
+                    registry.requestMatchers("/test-course-creation").authenticated();
                     registry.anyRequest().authenticated();
                 })
                 .formLogin(httpForm -> {
@@ -60,9 +69,9 @@ public class SecurityConfig {
                             .loginPage("/login")
                             .successHandler(oAuthCustomSuccessHandler);
                 })
+                .addFilterAfter(customAuthenticationFilter, BasicAuthenticationFilter.class)
                 .build();
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -1,6 +1,7 @@
 package com.classroom.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,8 +17,7 @@ import java.util.Set;
 @Table(name = "course_memberships", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"course_id","user_id"})
 })
-
-
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class CourseMembership {
 
     @Id
@@ -26,10 +26,14 @@ public class CourseMembership {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
+    @JsonIgnoreProperties({"memberships", "contents", "assignments", "teacher"})
     private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"taughtCourses", "courseMemberships", "uploadedContents", "createdTeams", "teamMemberships",
+                        "individualSubmissions", "evaluatedSubmissions", "notifications", "assignedStudents", 
+                        "assignedTA", "permissions", "password"})
     private User user;
 
 

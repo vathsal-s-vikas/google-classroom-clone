@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Course Creation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2b6edd;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Course Creation</h1>
+    
+    <div class="form-group">
+        <label for="className">Class Name</label>
+        <input type="text" id="className" placeholder="Enter class name">
+    </div>
+    
+    <div class="form-group">
+        <label for="classDescription">Description</label>
+        <textarea id="classDescription" rows="4" placeholder="Enter class description"></textarea>
+    </div>
+    
+    <button onclick="createCourse()">Create Course</button>
+    
+    <div class="result" id="result" style="display: none;">
+        <h3>API Response:</h3>
+        <pre id="responseData"></pre>
+    </div>
+    
+    <script>
+        async function createCourse() {
+            const name = document.getElementById('className').value.trim();
+            const description = document.getElementById('classDescription').value.trim();
+            
+            if (!name || !description) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/teacher/create-course', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                const data = await response.json();
+                
+                // Display the result
+                document.getElementById('responseData').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('result').style.display = 'block';
+                
+                // Clear the form
+                document.getElementById('className').value = '';
+                document.getElementById('classDescription').value = '';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('responseData').textContent = 'Error: ' + error.message;
+                document.getElementById('result').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html> 

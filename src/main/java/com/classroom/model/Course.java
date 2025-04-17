@@ -1,5 +1,7 @@
 package com.classroom.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,6 +15,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "courses")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Course {
 
     @Id
@@ -31,10 +34,14 @@ public class Course {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", nullable = false)
+    @JsonIgnoreProperties({"taughtCourses", "courseMemberships", "uploadedContents", "createdTeams", "teamMemberships",
+                        "individualSubmissions", "evaluatedSubmissions", "notifications", "assignedStudents", 
+                        "assignedTA", "permissions", "hibernateLazyInitializer", "handler"})
     private User teacher;
 
     @Column(name = "is_archived")
     private boolean isArchived;
+
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -43,13 +50,16 @@ public class Course {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("course")
     private Set<CourseMembership> memberships = new HashSet<>();
 
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("course")
     private Set<Content> contents = new HashSet<>();
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("course")
     private Set<Assignment> assignments = new HashSet<>();
 
     public Long getId() {

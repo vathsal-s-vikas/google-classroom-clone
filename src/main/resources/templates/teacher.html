@@ -1,7 +1,424 @@
 <!DOCTYPE html>
-<html>
-<head><title>Teacher Dashboard</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Classroom | Teacher Dashboard</title>
+    <style>
+        body {
+          margin: 0;
+          font-family: 'Segoe UI', sans-serif;
+          background-color: #f4f6f9;
+        }
+
+        .topbar {
+          background-color: #3f51b5;
+          color: white;
+          padding: 1rem 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 1.4rem;
+          font-weight: bold;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+
+        .topbar .right {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background-color: #fff;
+          color: #3f51b5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          cursor: pointer;
+          position: relative;
+        }
+
+        .dropdown {
+          position: absolute;
+          top: 50px;
+          right: 0;
+          background-color: white;
+          border-radius: 6px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          overflow: hidden;
+          display: none;
+          min-width: 120px;
+          z-index: 200;
+        }
+
+        .dropdown a {
+          display: block;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          text-decoration: none;
+          color: #333;
+        }
+
+        .dropdown a:hover {
+          background-color: #f0f0f0;
+        }
+
+        .container {
+          display: grid;
+          grid-template-columns: 220px 1fr;
+          min-height: 100vh;
+        }
+
+        .sidebar {
+          background-color: #2c3e50;
+          color: #ecf0f1;
+          padding: 2rem 1rem;
+          display: flex;
+          flex-direction: column;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+        }
+
+        .sidebar h3 {
+          margin-bottom: 1rem;
+          font-size: 1.2rem;
+          color: #ecf0f1;
+          border-bottom: 1px solid #7f8c8d;
+          padding-bottom: 0.5rem;
+        }
+
+        .sidebar ul {
+          list-style: none;
+          padding: 0;
+        }
+
+        .sidebar ul li {
+          padding: 0.8rem 1rem;
+          margin: 0.3rem 0;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: background 0.3s;
+        }
+
+        .sidebar ul li:hover,
+        .sidebar ul li.active {
+          background-color: #34495e;
+        }
+
+        .sidebar ul li a {
+          text-decoration: none;
+          color: inherit;
+          display: block;
+        }
+
+        .content {
+          padding: 2rem;
+          position: relative;
+        }
+
+        .section {
+          scroll-margin-top: 80px;
+        }
+
+        h2 {
+          margin-top: 2rem;
+          color: #2c3e50;
+        }
+
+        .form-group {
+          margin-bottom: 1rem;
+        }
+
+        label {
+          font-weight: 600;
+          display: block;
+          margin-bottom: 0.3rem;
+        }
+
+        input, textarea {
+          width: 100%;
+          padding: 0.7rem;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 1rem;
+          box-sizing: border-box;
+        }
+
+        button {
+          padding: 0.7rem 1.2rem;
+          background-color: #3f51b5;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 1rem;
+          cursor: pointer;
+          margin-top: 0.5rem;
+        }
+
+        button:hover {
+          background-color: #303f9f;
+        }
+
+        .course-card {
+          background-color: white;
+          padding: 1rem;
+          border-radius: 10px;
+          margin-top: 1rem;
+          box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+          cursor: pointer;
+        }
+
+        .course-card h3 {
+          margin: 0.2rem 0;
+        }
+
+        .empty-state {
+          margin-top: 3rem;
+          text-align: center;
+          color: #888;
+          font-size: 1.1rem;
+        }
+
+        .create-btn {
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          background-color: #3f51b5;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          font-size: 2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          transition: background 0.3s ease;
+        }
+
+        .create-btn:hover::after {
+          content: 'Create Class';
+          position: absolute;
+          right: 70px;
+          background-color: #3f51b5;
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          white-space: nowrap;
+        }
+
+        .modal {
+          display: none;
+          position: fixed;
+          z-index: 999;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          overflow: auto;
+          background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+          background-color: #fff;
+          margin: 10% auto;
+          padding: 2rem;
+          border-radius: 10px;
+          width: 400px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          position: relative;
+        }
+
+        .modal-content h2 {
+          margin-top: 0;
+        }
+
+        .close {
+          position: absolute;
+          right: 1rem;
+          top: 1rem;
+          font-size: 1.4rem;
+          cursor: pointer;
+          color: #999;
+        }
+
+        html {
+          scroll-behavior: smooth;
+        }
+    </style>
+</head>
 <body>
-<h1>Welcome, Teacher!</h1>
+
+<div class="topbar">
+    <div>📘 Dashboard</div>
+    <div class="right">
+        <span id="welcome-text">Welcome, <strong>Teacher</strong></span>
+        <div class="avatar" onclick="toggleDropdown()">T
+            <div class="dropdown" id="avatarDropdown">
+                <a href="/settings">⚙️ Settings</a>
+                <a href="/logout">🚪 Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="sidebar">
+        <h3>Navigation</h3>
+        <ul>
+            <li class="active"><a href="#classes">📚 My Classes</a></li>
+            <li><a href="#assignments">📝 Assignments</a></li>
+            <li><a href="#archived">🗂 Archived</a></li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <section id="classes" class="section">
+            <h2>My Classes</h2>
+            <div id="courses" class="courses-section"></div>
+        </section>
+
+        <section id="assignments" class="section">
+            <h2>Assignments</h2>
+            <p>Coming soon! 🚧</p>
+        </section>
+
+        <section id="archived" class="section">
+            <h2>Archived</h2>
+            <p>No archived classes yet.</p>
+        </section>
+    </div>
+</div>
+
+<!-- Floating Create Button -->
+<button class="create-btn" onclick="openCreateModal()">+</button>
+
+<!-- Create Modal -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Create New Class</h2>
+        <div class="form-group">
+            <label for="className">Class Name</label>
+            <input type="text" id="className" placeholder="Enter class name" />
+        </div>
+        <div class="form-group">
+            <label for="classDescription">Description</label>
+            <textarea id="classDescription" placeholder="Enter class description"></textarea>
+        </div>
+        <button onclick="submitCourse()">Create</button>
+    </div>
+</div>
+
+<script>
+    function toggleDropdown() {
+      const dropdown = document.getElementById("avatarDropdown");
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    }
+
+    async function fetchTeacherName() {
+      try {
+        const res = await fetch('/api/teacher/me');
+        const data = await res.json();
+        document.getElementById("welcome-text").innerHTML = `Welcome, <strong>${data.name}</strong>`;
+        document.querySelector(".avatar").textContent = data.name[0].toUpperCase();
+      } catch {
+        document.getElementById("welcome-text").innerHTML = `Welcome, <strong>Teacher</strong>`;
+      }
+    }
+
+    async function createCourse(name, description) {
+      try {
+        console.log('Attempting to create course:', { name, description });
+        const res = await fetch('/api/teacher/create-course', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description })
+        });
+        
+        if (res.ok) {
+          console.log('Course created successfully');
+          loadCourses();
+        } else {
+          const errorData = await res.json().catch(() => null);
+          console.error('Failed to create course. Status:', res.status, 'Error:', errorData);
+          alert('Failed to create course: ' + (errorData ? JSON.stringify(errorData) : res.statusText));
+        }
+      } catch (error) {
+        console.error('Error creating course:', error);
+        alert('Error creating course: ' + error.message);
+      }
+    }
+
+    async function loadCourses() {
+      const res = await fetch('/api/teacher/my-courses');
+      const data = await res.json();
+
+      const container = document.getElementById("courses");
+      container.innerHTML = '';
+
+      if (data.length === 0) {
+        container.innerHTML = `<div class="empty-state">No classes yet — Start your journey by creating your first course! 🚀</div>`;
+      } else {
+        data.forEach(course => {
+          const card = document.createElement("div");
+          card.className = "course-card";
+          card.onclick = () => window.location.href = `/teacher/course/${course.id}`;
+          card.innerHTML = `
+            <h3>${course.name}</h3>
+            <p>${course.description}</p>
+            <small><strong>Code:</strong> ${course.courseCode}</small><br>
+            <small><strong>Invite:</strong> ${course.inviteCode}</small>
+          `;
+          container.appendChild(card);
+        });
+      }
+    }
+
+    function openCreateModal() {
+      document.getElementById("createModal").style.display = "block";
+    }
+
+    function closeModal() {
+      document.getElementById("createModal").style.display = "none";
+    }
+
+    async function submitCourse() {
+      const name = document.getElementById("className").value.trim();
+      const desc = document.getElementById("classDescription").value.trim();
+      if (!name || !desc) {
+        alert("Please fill all fields.");
+        return;
+      }
+      console.log('Form submitted with values:', { name, desc });
+      await createCourse(name, desc);
+      closeModal();
+    }
+
+    window.onload = async () => {
+      await fetchTeacherName();
+      await loadCourses();
+    };
+
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById("avatarDropdown");
+      if (!e.target.closest('.avatar')) {
+        dropdown.style.display = 'none';
+      }
+    });
+</script>
+
 </body>
 </html>

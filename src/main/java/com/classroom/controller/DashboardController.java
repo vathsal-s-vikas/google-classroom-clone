@@ -21,5 +21,9 @@ public class DashboardController {
         return "ta";
     }
 
+    @GetMapping("/test-course-creation")
+    public String testCourseCreation() {
+        return "test-course-creation";
+    }
 
 }

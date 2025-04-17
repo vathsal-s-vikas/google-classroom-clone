@@ -1,7 +1,167 @@
 <!DOCTYPE html>
-<html>
-<head><title>Student Dashboard</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Classroom - Student Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: #3f51b5;
+            color: white;
+            padding: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar ul li {
+            margin: 1rem 0;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar ul li:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main content */
+        .main {
+            flex-grow: 1;
+            padding: 1.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            color: #3f51b5;
+        }
+
+        .join-btn {
+            padding: 0.5rem 1rem;
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .join-btn:hover {
+            background-color: #303f9f;
+        }
+
+        .class-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .class-card {
+            background-color: white;
+            border-left: 6px solid #3f51b5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .class-card:hover {
+            transform: scale(1.02);
+        }
+
+        .class-card h3 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .class-card p {
+            color: #777;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
 <body>
-<h1>Welcome, Student!</h1>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>Assignments</h2>
+    <ul>
+        <li>Upcoming</li>
+        <li>Submitted</li>
+        <li>Grades</li>
+    </ul>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+    <div class="header">
+        <h1>Classroom</h1>
+        <button class="join-btn" onclick="joinClass()">+ Join Class</button>
+    </div>
+
+    <div class="class-container" id="classContainer">
+        <!-- Class Cards will be dynamically inserted here -->
+    </div>
+</div>
+
+<script>
+    const classes = [
+        { title: 'Math 101', description: 'Algebra & Geometry' },
+        { title: 'History of Art', description: 'Renaissance to Modern' },
+        { title: 'Physics Basics', description: 'Motion & Energy' },
+    ];
+
+    function loadClasses() {
+        const container = document.getElementById('classContainer');
+        classes.forEach(cls => {
+            const card = document.createElement('div');
+            card.className = 'class-card';
+            card.innerHTML = `<h3>${cls.title}</h3><p>${cls.description}</p>`;
+            container.appendChild(card);
+        });
+    }
+
+    function joinClass() {
+        const title = prompt("Enter Class Title:");
+        const description = prompt("Enter Class Description:");
+        if (title && description) {
+            classes.push({ title, description });
+            document.getElementById('classContainer').innerHTML = '';
+            loadClasses();
+        }
+    }
+
+    window.onload = loadClasses;
+</script>
+
 </body>
 </html>
