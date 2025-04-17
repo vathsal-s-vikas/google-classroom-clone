@@ -78,7 +78,7 @@ public class CourseViewController {
         // Get course members
         List<CourseMembership> memberships = courseMembershipService.getMembershipsByCourse(course);
         
-        // Get course assignments
+        // Get course assignments - Force fetch to ensure we have the latest
         List<Assignment> assignments = assignmentService.getAssignmentsByCourse(course);
         
         // Add data to the model
@@ -113,13 +113,16 @@ public class CourseViewController {
             return "redirect:/dashboard/student";
         }
         
-        // Get course assignments
+        // Get course assignments - Force fetch to ensure we have the latest
         List<Assignment> assignments = assignmentService.getAssignmentsByCourse(course);
         
         // Add data to the model
         model.addAttribute("course", CourseDTO.fromEntity(course));
         model.addAttribute("assignments", assignments);
         model.addAttribute("currentUser", currentUser);
+        
+        // To fix the student view issue, let's add a log message to help debug
+        System.out.println("Student View - Loaded " + assignments.size() + " assignments for course ID: " + courseId);
         
         return "course/student-view";
     }

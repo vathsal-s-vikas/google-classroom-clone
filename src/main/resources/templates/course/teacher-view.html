@@ -400,6 +400,31 @@
             opacity: 1;
             bottom: 50px;
         }
+        
+        /* File attachment styles */
+        #file-list {
+            margin-top: 10px;
+        }
+        
+        .file-item {
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item span {
+            font-size: 0.9rem;
+        }
+        
+        .file-remove {
+            color: #dc3545;
+            cursor: pointer;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -477,13 +502,19 @@
                     <div class="assignment-info">
                         <h3 th:text="${assignment.title}">Assignment Title</h3>
                         <div class="assignment-meta">
-                            <span th:text="${'Due: ' + #temporals.format(assignment.deadline, 'MMM dd, yyyy')}">Due: May 15, 2023</span>
-                            <span th:text="${'Points: ' + assignment.maxMarks}">Points: 100</span>
-                            <span class="assignment-type" th:text="${assignment.assignmentType}">INDIVIDUAL</span>
+                            <span><i class="fas fa-calendar"></i> <span th:text="${'Due: ' + #temporals.format(assignment.deadline, 'MMM dd, yyyy')}">Due: May 15, 2023</span></span>
+                            <span><i class="fas fa-award"></i> <span th:text="${assignment.maxMarks + ' points'}">100 points</span></span>
+                            <span><i class="fas fa-users"></i> <span th:text="${assignment.assignmentType}">INDIVIDUAL</span></span>
+                        </div>
+                        <div class="assignment-description" th:text="${assignment.description}" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+                            Assignment description goes here...
                         </div>
                     </div>
                     <div class="action-buttons">
-                        <button class="btn btn-outline" th:attr="onclick='editAssignment(' + ${assignment.id} + ')'">
+                        <button class="btn btn-outline view-assignment" th:attr="data-id=${assignment.id}" onclick="viewAssignment(this.getAttribute('data-id'))">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-outline edit-assignment" th:attr="data-id=${assignment.id}" onclick="editAssignment(this.getAttribute('data-id'))">
                             <i class="fas fa-edit"></i> Edit
                         </button>
                     </div>
@@ -553,8 +584,10 @@
 <div id="assignmentModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModals()">&times;</span>
-        <h2>Create New Assignment</h2>
+        <h2 id="assignmentModalTitle">Create New Assignment</h2>
         <form id="assignmentForm">
+            <input type="hidden" id="courseId" th:value="${course.id}">
+            <input type="hidden" id="assignmentId" name="assignmentId" value="">
             <div class="form-group">
                 <label for="title">Title</label>
                 <input type="text" id="title" name="title" required>
@@ -597,6 +630,14 @@
                     <label for="maxLateDays">Maximum Late Days</label>
                     <input type="number" id="maxLateDays" name="maxLateDays" min="1">
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="attachments">Attachments</label>
+                <div id="attachment-container">
+                    <input type="file" id="attachment-file" multiple>
+                    <div id="file-list"></div>
+                </div>
+                <small>Upload files that students will need for this assignment (e.g., templates, images, documents)</small>
             </div>
             <button type="submit" class="btn btn-primary">Create Assignment</button>
         </form>
@@ -784,10 +825,203 @@
     // Form submissions
     document.getElementById('assignmentForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        // TODO: Implement assignment creation via API
-        showToast('Assignment created successfully!');
-        closeModals();
+        
+        // Get form data
+        const formData = {
+            courseId: document.querySelector('#courseId').value,
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            instructions: document.getElementById('instructions').value,
+            assignmentType: document.getElementById('assignmentType').value,
+            maxMarks: document.getElementById('maxMarks').value,
+            deadline: document.getElementById('deadline').value,
+            lateSubmissionAllowed: document.getElementById('lateSubmissionAllowed').checked
+        };
+        
+        // Add late submission options if allowed
+        if (formData.lateSubmissionAllowed) {
+            formData.latePenaltyPercentage = document.getElementById('latePenaltyPercentage').value;
+            formData.maxLateDays = document.getElementById('maxLateDays').value;
+        }
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Check if we're editing an existing assignment or creating a new one
+        const assignmentId = this.dataset.assignmentId || document.getElementById('assignmentId').value;
+        const isEditing = !!assignmentId;
+        
+        // API endpoint and method
+        const endpoint = isEditing ? `/api/assignments/${assignmentId}/update` : '/api/assignments/create';
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        console.log("Form submission:", {
+            isEditing,
+            assignmentId,
+            endpoint,
+            method,
+            formData
+        });
+        
+        // Make API call
+        fetch(endpoint, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json().catch(e => {
+                    console.error("JSON parse error:", e);
+                    return { success: true, message: "Operation completed but response couldn't be parsed" };
+                });
+            } else {
+                return response.text().then(text => {
+                    throw new Error(text || 'Failed to ' + (isEditing ? 'update' : 'create') + ' assignment');
+                });
+            }
+        })
+        .then(data => {
+            // If there are files to upload and we're creating a new assignment, handle them
+            const fileInput = document.getElementById('attachment-file');
+            const files = fileInput.files;
+            
+            if (files.length > 0) {
+                // Get the assignment ID from the response or use the existing one
+                const assignmentIdToUse = data && data.assignmentId ? data.assignmentId : assignmentId;
+                if (!assignmentIdToUse) {
+                    throw new Error("Cannot upload files: Missing assignment ID");
+                }
+                return uploadAttachments(assignmentIdToUse, files);
+            }
+            
+            return data;
+        })
+        .then(data => {
+            showToast(isEditing ? 'Assignment updated successfully!' : 'Assignment created successfully!');
+            closeModals();
+            // Reset the form
+            document.getElementById('assignmentForm').reset();
+            document.getElementById('assignmentId').value = '';
+            document.getElementById('assignmentForm').dataset.assignmentId = '';
+            document.getElementById('assignmentModalTitle').textContent = 'Create New Assignment';
+            
+            // Reload page after a short delay to show the new/updated assignment
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        })
+        .catch(error => {
+            showToast(error.message || 'Error ' + (isEditing ? 'updating' : 'creating') + ' assignment', 'error');
+            console.error('Error:', error);
+        });
     });
+    
+    // Function to upload attachments for an assignment
+    async function uploadAttachments(assignmentId, files) {
+        try {
+            const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+            
+            // Get the custom file array if it exists
+            const fileInput = document.getElementById('attachment-file');
+            const filesToUpload = fileInput.fileArray || files;
+            
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const formData = new FormData();
+                formData.append('file', filesToUpload[i]);
+                
+                await fetch(`/api/assignments/${assignmentId}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        [header]: token
+                    },
+                    body: formData
+                });
+            }
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Error uploading files:', error);
+            throw new Error('Error uploading files: ' + error.message);
+        }
+    }
+    
+    // Display selected files in the file list
+    document.getElementById('attachment-file').addEventListener('change', function(e) {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+        
+        const files = e.target.files;
+        const fileArray = Array.from(files);
+        
+        // Store files in a data attribute for later access
+        this.fileArray = fileArray;
+        
+        for (let i = 0; i < fileArray.length; i++) {
+            const file = fileArray[i];
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span>${file.name} (${formatFileSize(file.size)})</span>
+                <i class="fas fa-times file-remove" data-index="${i}"></i>
+            `;
+            fileList.appendChild(fileItem);
+        }
+        
+        // Add event listeners for remove buttons
+        document.querySelectorAll('.file-remove').forEach(button => {
+            button.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                removeFile(index);
+            });
+        });
+    });
+    
+    // Remove a file from the list
+    function removeFile(index) {
+        const fileInput = document.getElementById('attachment-file');
+        if (!fileInput.fileArray) return;
+        
+        // Remove the file from the array
+        fileInput.fileArray.splice(index, 1);
+        
+        // Update the file list display
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+        
+        for (let i = 0; i < fileInput.fileArray.length; i++) {
+            const file = fileInput.fileArray[i];
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span>${file.name} (${formatFileSize(file.size)})</span>
+                <i class="fas fa-times file-remove" data-index="${i}"></i>
+            `;
+            fileList.appendChild(fileItem);
+        }
+        
+        // Add event listeners for new remove buttons
+        document.querySelectorAll('.file-remove').forEach(button => {
+            button.addEventListener('click', function() {
+                const buttonIndex = parseInt(this.getAttribute('data-index'));
+                removeFile(buttonIndex);
+            });
+        });
+    }
+    
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes == 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
     
     document.getElementById('inviteForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -802,6 +1036,453 @@
         showToast('Content added successfully!');
         closeModals();
     });
+    
+    // View assignment details
+    function viewAssignment(assignmentId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        console.log("Fetching assignment with ID:", assignmentId);
+        
+        // Fetch assignment details
+        fetch(`/api/assignments/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            console.log("Response status:", response.status);
+            if (!response.ok) {
+                throw new Error(`Error response: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(text => {
+            console.log("Raw response text:", text);
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error("JSON parse error:", e);
+                throw new Error("Failed to parse assignment data");
+            }
+        })
+        .then(assignment => {
+            console.log("Parsed assignment:", assignment);
+            // Format deadline for display
+            const deadlineDate = new Date(assignment.deadline);
+            const formattedDeadline = deadlineDate.toLocaleDateString() + ' at ' + 
+                deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Create a modal to display assignment details
+            const modalHtml = `
+                <div class="modal" id="viewAssignmentModal">
+                    <div class="modal-content" style="width: 800px; max-height: 90vh; overflow-y: auto;">
+                        <span class="close" onclick="document.getElementById('viewAssignmentModal').remove()">&times;</span>
+                        <h2>${assignment.title}</h2>
+                        <div class="assignment-meta" style="margin: 1rem 0;">
+                            <span><i class="fas fa-calendar"></i> Due: ${formattedDeadline}</span>
+                            <span><i class="fas fa-award"></i> ${assignment.maxMarks} points</span>
+                            <span><i class="fas fa-users"></i> ${assignment.assignmentType}</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${assignment.description || 'No description provided.'}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Instructions</label>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${assignment.instructions || 'No instructions provided.'}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Late Submissions</label>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${assignment.lateSubmissionAllowed ? 
+                                    `Allowed with ${assignment.latePenaltyPercentage || 0}% penalty for up to ${assignment.maxLateDays || 0} days` : 
+                                    'Not allowed'}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Attachments</label>
+                            <div id="attachment-list" style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                Loading attachments...
+                            </div>
+                        </div>
+                        
+                        <!-- Submissions Section -->
+                        <div class="form-group">
+                            <h3>Student Submissions</h3>
+                            <div id="submissions-list" style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                Loading submissions...
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                            <button class="btn btn-outline" onclick="document.getElementById('viewAssignmentModal').remove()">Close</button>
+                            <button class="btn btn-primary" onclick="editAssignment('${assignment.id}')">Edit</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('viewAssignmentModal').style.display = 'block';
+            
+            // Fetch attachments
+            fetch(`/api/assignments/${assignmentId}/attachments`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [header]: token
+                }
+            })
+            .then(response => response.json())
+            .then(attachments => {
+                const attachmentList = document.getElementById('attachment-list');
+                if (attachmentList) {
+                    if (attachments.length === 0) {
+                        attachmentList.innerHTML = 'No attachments';
+                    } else {
+                        attachmentList.innerHTML = attachments.map(attachment => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span>${attachment.fileName} (${formatFileSize(attachment.fileSize)})</span>
+                                <button class="btn btn-outline" style="padding: 0.3rem 0.6rem;" onclick="downloadAttachment('${attachment.id}', '${attachment.fileName}')">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching attachments:', error);
+                const attachmentList = document.getElementById('attachment-list');
+                if (attachmentList) {
+                    attachmentList.innerHTML = 'Failed to load attachments';
+                }
+            });
+            
+            // Fetch submissions
+            fetch(`/api/submissions/assignment/${assignmentId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [header]: token
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error fetching submissions: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(submissions => {
+                const submissionsList = document.getElementById('submissions-list');
+                if (submissionsList) {
+                    if (submissions.length === 0) {
+                        submissionsList.innerHTML = '<div class="empty-state" style="padding: 1rem; text-align: center;"><i class="fas fa-inbox"></i><p>No submissions yet</p></div>';
+                    } else {
+                        submissionsList.innerHTML = `
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: #f2f2f2;">
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Student</th>
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Submitted</th>
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Status</th>
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${submissions.map(submission => {
+                                        const submittedDate = new Date(submission.submittedAt);
+                                        const formatted = submittedDate.toLocaleDateString() + ' ' + 
+                                            submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                        
+                                        let status = 'Submitted';
+                                        if (submission.isLate) {
+                                            status = `Late (${submission.daysLate} days)`;
+                                        }
+                                        if (submission.isEvaluated) {
+                                            status += ' - Evaluated';
+                                        }
+                                        
+                                        return `
+                                            <tr style="border-bottom: 1px solid #ddd;">
+                                                <td style="padding: 8px;">
+                                                    ${submission.student ? submission.student.name : 'Team Submission'}
+                                                </td>
+                                                <td style="padding: 8px;">${formatted}</td>
+                                                <td style="padding: 8px;">${status}</td>
+                                                <td style="padding: 8px;">
+                                                    <button class="btn btn-outline" style="padding: 0.3rem 0.6rem;" 
+                                                        onclick="viewSubmission('${submission.id}')">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching submissions:', error);
+                const submissionsList = document.getElementById('submissions-list');
+                if (submissionsList) {
+                    submissionsList.innerHTML = 'Failed to load submissions: ' + error.message;
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error viewing assignment:', error);
+            showToast(error.message || 'Error loading assignment details', 'error');
+        });
+    }
+    
+    // Edit assignment
+    function editAssignment(assignmentId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        console.log("Editing assignment with ID:", assignmentId);
+        
+        // Close view modal if open
+        const viewModal = document.getElementById('viewAssignmentModal');
+        if (viewModal) {
+            viewModal.remove();
+        }
+        
+        // Fetch assignment details
+        fetch(`/api/assignments/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            console.log("Response status:", response.status);
+            if (!response.ok) {
+                throw new Error(`Error response: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(text => {
+            console.log("Raw response text:", text);
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error("JSON parse error:", e);
+                throw new Error("Failed to parse assignment data");
+            }
+        })
+        .then(assignment => {
+            console.log("Parsed assignment:", assignment);
+            
+            // Populate edit modal with assignment data
+            document.getElementById('assignmentModal').style.display = 'block';
+            document.getElementById('assignmentModalTitle').textContent = 'Edit Assignment';
+            
+            // Set form fields
+            document.getElementById('assignmentId').value = assignment.id;
+            document.getElementById('title').value = assignment.title;
+            document.getElementById('description').value = assignment.description || '';
+            document.getElementById('instructions').value = assignment.instructions || '';
+            document.getElementById('assignmentType').value = assignment.assignmentType;
+            document.getElementById('maxMarks').value = assignment.maxMarks;
+            
+            // Format deadline for datetime-local input
+            const deadline = new Date(assignment.deadline);
+            const formattedDeadline = deadline.toISOString().slice(0, 16);
+            document.getElementById('deadline').value = formattedDeadline;
+            
+            // Late submission options
+            document.getElementById('lateSubmissionAllowed').checked = assignment.lateSubmissionAllowed;
+            const lateOptions = document.getElementById('lateSubmissionOptions');
+            lateOptions.style.display = assignment.lateSubmissionAllowed ? 'block' : 'none';
+            
+            if (assignment.lateSubmissionAllowed) {
+                document.getElementById('latePenaltyPercentage').value = assignment.latePenaltyPercentage || '';
+                document.getElementById('maxLateDays').value = assignment.maxLateDays || '';
+            }
+            
+            // Update submit button text and behavior
+            const submitButton = document.querySelector('#assignmentForm button[type="submit"]');
+            submitButton.textContent = 'Update Assignment';
+            
+            // Store assignment ID in the form for submission
+            document.getElementById('assignmentForm').dataset.assignmentId = assignment.id;
+        })
+        .catch(error => {
+            console.error('Error editing assignment:', error);
+            showToast(error.message || 'Error loading assignment for editing', 'error');
+        });
+    }
+    
+    // Download attachment function
+    function downloadAttachment(attachmentId, fileName) {
+        // Placeholder for download functionality
+        showToast('Download functionality not implemented yet');
+    }
+    
+    // Function to view a specific submission
+    function viewSubmission(submissionId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Fetch submission details
+        fetch(`/api/submissions/${submissionId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error response: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(submission => {
+            console.log("Submission details:", submission);
+            
+            // Format date
+            const submittedDate = new Date(submission.submittedAt);
+            const formattedDate = submittedDate.toLocaleDateString() + ' at ' + 
+                submittedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Create a modal to display submission details
+            const modalHtml = `
+                <div class="modal" id="viewSubmissionModal">
+                    <div class="modal-content">
+                        <span class="close" onclick="document.getElementById('viewSubmissionModal').remove()">&times;</span>
+                        <h2>Submission from ${submission.student ? submission.student.name : 'Team'}</h2>
+                        <div style="margin: 1rem 0; color: #666;">
+                            <p>Submitted on: ${formattedDate}</p>
+                            <p>Status: ${submission.isLate ? `Late (${submission.daysLate} days)` : 'On time'}</p>
+                            <p>Evaluated: ${submission.isEvaluated ? 'Yes' : 'No'}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Submission Text</label>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${submission.submissionText || 'No text provided.'}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Attachments</label>
+                            <div id="submission-attachments" style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                Loading attachments...
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                            <button class="btn btn-outline" onclick="document.getElementById('viewSubmissionModal').remove()">Close</button>
+                            ${!submission.isEvaluated ? 
+                                `<button class="btn btn-primary" onclick="evaluateSubmission('${submission.id}')">
+                                    <i class="fas fa-check"></i> Mark as Evaluated
+                                </button>` : ''
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('viewSubmissionModal').style.display = 'block';
+            
+            // Fetch attachments
+            fetch(`/api/submissions/${submissionId}/attachments`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [header]: token
+                }
+            })
+            .then(response => response.json())
+            .then(attachments => {
+                const attachmentList = document.getElementById('submission-attachments');
+                if (attachmentList) {
+                    if (attachments.length === 0) {
+                        attachmentList.innerHTML = 'No attachments';
+                    } else {
+                        attachmentList.innerHTML = attachments.map(attachment => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span>${attachment.fileName} (${formatFileSize(attachment.fileSize)})</span>
+                                <button class="btn btn-outline" style="padding: 0.3rem 0.6rem;" onclick="downloadAttachment('${attachment.id}', '${attachment.fileName}')">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching attachments:', error);
+                const attachmentList = document.getElementById('submission-attachments');
+                if (attachmentList) {
+                    attachmentList.innerHTML = 'Failed to load attachments';
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error viewing submission:', error);
+            showToast(error.message || 'Error loading submission details', 'error');
+        });
+    }
+    
+    // Function to mark a submission as evaluated
+    function evaluateSubmission(submissionId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch(`/api/submissions/${submissionId}/evaluate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error response: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            showToast('Submission marked as evaluated');
+            
+            // Close the submission modal
+            const modal = document.getElementById('viewSubmissionModal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Refresh the assignment view to update the submissions list
+            const viewModal = document.getElementById('viewAssignmentModal');
+            if (viewModal) {
+                const assignmentId = viewModal.querySelector('.btn-primary').getAttribute('onclick').match(/'([^']+)'/)[1];
+                viewModal.remove();
+                viewAssignment(assignmentId);
+            }
+        })
+        .catch(error => {
+            console.error('Error evaluating submission:', error);
+            showToast(error.message || 'Error marking submission as evaluated', 'error');
+        });
+    }
 </script>
 
 </body>

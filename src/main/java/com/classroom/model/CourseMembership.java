@@ -102,5 +102,28 @@ public class CourseMembership {
 //    @OneToMany(mappedBy = "CourseOffering", cascade = CascadeType.ALL, orphanRemoval = true)
 //    private Set<TA> teachingAssistants = new HashSet<>();
 
+    public void setSubmission(Submission submission) {
+        // Implementation needed
+    }
+
+    public void setFileName(String fileName) {
+        // Implementation needed
+    }
+
+    public void setFileType(String fileType) {
+        // Implementation needed
+    }
+
+    public void setFileSize(Integer fileSize) {
+        // Implementation needed
+    }
+
+    public void setFileData(byte[] fileData) {
+        // Implementation needed
+    }
+
+    public void setFileUrl(String fileUrl) {
+        // Implementation needed
+    }
 
 }

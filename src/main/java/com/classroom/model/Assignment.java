@@ -1,5 +1,7 @@
 package com.classroom.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Table(name = "assignments")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Assignment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,6 +23,7 @@ public class Assignment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
+    @JsonIgnore
     private Course course;
 
     @Column(nullable = false)
@@ -55,10 +59,25 @@ public class Assignment {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private Set<Submission> submissions = new HashSet<>();
 
     @OneToOne(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private GroupAssignment groupAssignment;
+    
+    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<AssignmentAttachment> attachments = new HashSet<>();
+    
+    // Manual getter and setter for course field
+    public Course getCourse() {
+        return course;
+    }
+    
+    public void setCourse(Course course) {
+        this.course = course;
+    }
 
     @PrePersist
     protected void onCreate() {

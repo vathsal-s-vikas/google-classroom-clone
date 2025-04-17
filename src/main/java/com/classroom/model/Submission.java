@@ -52,6 +52,87 @@ public class Submission {
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private Mark mark;
 
+    // Manual getter and setter methods
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Assignment getAssignment() {
+        return assignment;
+    }
+
+    public void setAssignment(Assignment assignment) {
+        this.assignment = assignment;
+    }
+
+    public User getStudent() {
+        return student;
+    }
+
+    public void setStudent(User student) {
+        this.student = student;
+    }
+
+    public Team getTeam() {
+        return team;
+    }
+
+    public void setTeam(Team team) {
+        this.team = team;
+    }
+
+    public String getSubmissionText() {
+        return submissionText;
+    }
+
+    public void setSubmissionText(String submissionText) {
+        this.submissionText = submissionText;
+    }
+
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public boolean isLate() {
+        return isLate;
+    }
+
+    public void setLate(boolean late) {
+        isLate = late;
+    }
+
+    public Integer getDaysLate() {
+        return daysLate;
+    }
+
+    public void setDaysLate(Integer daysLate) {
+        this.daysLate = daysLate;
+    }
+
+    public boolean isEvaluated() {
+        return isEvaluated;
+    }
+
+    public void setEvaluated(boolean evaluated) {
+        isEvaluated = evaluated;
+    }
+
+    public Set<SubmissionAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(Set<SubmissionAttachment> attachments) {
+        this.attachments = attachments;
+    }
+
     @PrePersist
     protected void onCreate() {
         submittedAt = LocalDateTime.now();

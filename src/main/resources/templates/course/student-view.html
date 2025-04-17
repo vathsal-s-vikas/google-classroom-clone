@@ -390,6 +390,223 @@
             opacity: 1;
             bottom: 50px;
         }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 700px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #3f51b5;
+            color: #3f51b5;
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(63, 81, 181, 0.1);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* Attachment list styles */
+        .attachment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .attachment-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .badge-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .file-upload-container {
+            margin-bottom: 20px;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #4285f4;
+            background-color: rgba(66, 133, 244, 0.05);
+        }
+        
+        #file-list {
+            margin-top: 15px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .file-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .file-size {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .file-remove {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .file-remove:hover {
+            color: #d93025;
+            background-color: rgba(217, 48, 37, 0.1);
+        }
+        
+        .submission-form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        /* Submission view styles */
+        .submission-info {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .submission-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: block;
+        }
+        
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            position: relative;
+            color: #666;
+        }
+        
+        .modal-tab.active {
+            color: #3f51b5;
+            font-weight: 500;
+        }
+        
+        .modal-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #3f51b5;
+        }
     </style>
 </head>
 <body>
@@ -416,8 +633,8 @@
             <h1 th:text="${course.name}">Course Name</h1>
             <span th:text="${'Code: ' + course.courseCode}">Code: CS101</span>
             <div class="teacher-info">
-                <div class="teacher-avatar" th:text="${course.teacher.name.substring(0,1).toUpperCase()}">T</div>
-                <span th:text="${course.teacher.name}">Teacher Name</span>
+                <div class="teacher-avatar" th:text="${course.teacherName != null ? course.teacherName.substring(0,1).toUpperCase() : 'T'}">T</div>
+                <span th:text="${course.teacherName != null ? course.teacherName : 'Teacher'}">Teacher Name</span>
             </div>
         </div>
     </div>
@@ -456,7 +673,9 @@
             <div class="assignment-item" th:each="assignment : ${assignments}">
                 <div class="assignment-header">
                     <div class="assignment-title" th:text="${assignment.title}">Assignment Title</div>
-                    <div class="assignment-status status-pending">Pending</div>
+                    <div class="assignment-status status-pending">
+                        Pending
+                    </div>
                 </div>
                 <div class="assignment-details" th:text="${assignment.description}">
                     This is the assignment description with details about what you need to do.
@@ -467,7 +686,12 @@
                     <span><i class="fas fa-users"></i> <span th:text="${assignment.assignmentType}">Individual</span></span>
                 </div>
                 <div class="assignment-actions">
-                    <a href="#" class="btn btn-primary">View Assignment</a>
+                    <button class="btn btn-outline" th:attr="data-id=${assignment.id}" onclick="viewAssignment(this.getAttribute('data-id'))">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="btn btn-primary" th:attr="data-id=${assignment.id}" onclick="submitAssignment(this.getAttribute('data-id'))">
+                        <i class="fas fa-upload"></i> Submit Assignment
+                    </button>
                 </div>
             </div>
         </div>
@@ -536,6 +760,482 @@
             toast.classList.remove('show');
         }, 3000);
     }
+    
+    // View assignment details
+    function viewAssignment(assignmentId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Fetch assignment details
+        fetch(`/api/assignments/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to load assignment details');
+            }
+        })
+        .then(assignment => {
+            // Format deadline
+            const deadlineDate = new Date(assignment.deadline);
+            const formattedDeadline = deadlineDate.toLocaleDateString() + ' at ' + 
+                deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Check if deadline is past
+            const isPastDeadline = new Date() > deadlineDate;
+            
+            // Create a modal to display assignment details
+            const modalHtml = `
+                <div class="modal" id="viewAssignmentModal">
+                    <div class="modal-content">
+                        <span class="close" onclick="document.getElementById('viewAssignmentModal').remove()">&times;</span>
+                        <h2>${assignment.title}</h2>
+                        
+                        <div class="submission-status">
+                            <span class="badge ${isPastDeadline ? 'badge-warning' : 'badge-info'}">
+                                ${isPastDeadline ? 'Past Deadline' : 'Open'}
+                            </span>
+                            <span>Due: ${formattedDeadline}</span>
+                        </div>
+                        
+                        <div class="assignment-meta" style="margin-bottom: 1rem;">
+                            <span><i class="fas fa-award"></i> ${assignment.maxMarks} points</span>
+                            <span><i class="fas fa-users"></i> ${assignment.assignmentType}</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <h3>Description</h3>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${assignment.description || 'No description provided.'}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <h3>Instructions</h3>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${assignment.instructions || 'No instructions provided.'}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <h3>Late Submissions</h3>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                ${assignment.lateSubmissionAllowed ? 
+                                    `Allowed with ${assignment.latePenaltyPercentage || 0}% penalty for up to ${assignment.maxLateDays || 0} days` : 
+                                    'Not allowed'}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <h3>Attachments</h3>
+                            <div id="attachment-list" style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
+                                Loading attachments...
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; gap: 0.5rem;">
+                            <button class="btn btn-outline" onclick="document.getElementById('viewAssignmentModal').remove()">
+                                Close
+                            </button>
+                            <button class="btn btn-primary" onclick="submitAssignment('${assignment.id}')">
+                                Submit Assignment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('viewAssignmentModal').style.display = 'block';
+            
+            // Fetch attachments
+            fetch(`/api/assignments/${assignmentId}/attachments`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [header]: token
+                }
+            })
+            .then(response => response.json())
+            .then(attachments => {
+                const attachmentList = document.getElementById('attachment-list');
+                if (!attachmentList) return; // Modal might have been closed
+                
+                if (attachments.length === 0) {
+                    attachmentList.innerHTML = 'No attachments';
+                } else {
+                    attachmentList.innerHTML = attachments.map(attachment => `
+                        <div class="attachment-item">
+                            <div>
+                                <i class="fas fa-file"></i>
+                                <span>${attachment.fileName} (${formatFileSize(attachment.fileSize || 0)})</span>
+                            </div>
+                            <button class="btn btn-outline" style="padding: 0.3rem 0.6rem;" onclick="downloadAttachment('${attachment.id}', '${attachment.fileName}')">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching attachments:', error);
+                const attachmentList = document.getElementById('attachment-list');
+                if (attachmentList) {
+                    attachmentList.innerHTML = 'Failed to load attachments';
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error loading assignment', 'error');
+        });
+    }
+    
+    // Submit assignment function
+    function submitAssignment(assignmentId) {
+        // Close view modal if open
+        const viewModal = document.getElementById('viewAssignmentModal');
+        if (viewModal) {
+            viewModal.remove();
+        }
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Fetch assignment details for the submission form
+        fetch(`/api/assignments/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to load assignment details');
+            }
+        })
+        .then(assignment => {
+            // Format deadline
+            const deadlineDate = new Date(assignment.deadline);
+            const formattedDeadline = deadlineDate.toLocaleDateString() + ' at ' + 
+                deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Check if deadline is past
+            const isPastDeadline = new Date() > deadlineDate;
+            
+            // Create a modal with submission form
+            const modalHtml = `
+                <div class="modal" id="submitAssignmentModal">
+                    <div class="modal-content">
+                        <span class="close" onclick="document.getElementById('submitAssignmentModal').remove()">&times;</span>
+                        <h2>Submit Assignment: ${assignment.title}</h2>
+                        
+                        <div class="submission-status">
+                            <span class="badge ${isPastDeadline ? 'badge-warning' : 'badge-info'}">
+                                ${isPastDeadline ? 'Past Deadline' : 'Open'}
+                            </span>
+                            <span>Due: ${formattedDeadline}</span>
+                        </div>
+                        
+                        <div style="margin: 1rem 0;">
+                            ${isPastDeadline && !assignment.lateSubmissionAllowed ? 
+                                `<div class="alert" style="background-color: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 1rem;">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    This assignment is past the deadline and late submissions are not allowed.
+                                </div>` : 
+                                isPastDeadline && assignment.lateSubmissionAllowed ? 
+                                `<div class="alert" style="background-color: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 1rem;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    This is a late submission. A penalty of ${assignment.latePenaltyPercentage || 0}% may apply.
+                                </div>` : 
+                                ''
+                            }
+                        </div>
+                        
+                        <form id="submissionForm">
+                            <input type="hidden" name="assignmentId" value="${assignment.id}">
+                            
+                            <div class="form-group">
+                                <label for="submissionText">Your Answer</label>
+                                <textarea 
+                                    id="submissionText" 
+                                    name="submissionText" 
+                                    rows="6" 
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                                    placeholder="Type your answer here..."
+                                    required
+                                ></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Attachments</label>
+                                <div class="file-upload-container">
+                                    <div class="file-upload-area" id="uploadArea">
+                                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #3f51b5; margin-bottom: 0.5rem;"></i>
+                                        <p>Drag & drop files here or click to browse</p>
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        id="submissionFile" 
+                                        name="attachments" 
+                                        multiple 
+                                        style="display: none;" 
+                                    >
+                                </div>
+                                <div id="file-list" class="file-list"></div>
+                            </div>
+                            
+                            <div class="submission-form-buttons">
+                                <button type="button" class="btn btn-outline" onclick="document.getElementById('submitAssignmentModal').remove()">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-paper-plane"></i> Submit Assignment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('submitAssignmentModal').style.display = 'block';
+            
+            // Handle file selection display
+            document.getElementById('uploadArea').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('submissionFile').click();
+            });
+            
+            // Restore the file selection display functionality
+            document.getElementById('submissionFile').addEventListener('change', function() {
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+                
+                if (this.files.length > 0) {
+                    for (let i = 0; i < this.files.length; i++) {
+                        const file = this.files[i];
+                        const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+                        
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <div class="file-info">
+                                <span class="file-name">${file.name}</span>
+                                <span class="file-size">${fileSize}</span>
+                            </div>
+                            <button type="button" class="file-remove" data-index="${i}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        fileList.appendChild(fileItem);
+                    }
+                    
+                    // Add event listeners to remove buttons
+                    document.querySelectorAll('.file-remove').forEach(button => {
+                        button.addEventListener('click', function(e) {
+                            e.stopPropagation(); // Prevent triggering file input
+                            // Note: In a real implementation, we would need to create a new FileList
+                            // Since FileList is read-only, this is just visual feedback
+                            this.closest('.file-item').remove();
+                        });
+                    });
+                }
+            });
+            
+            // Handle submission form
+            document.getElementById('submissionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const assignmentId = document.querySelector('input[name="assignmentId"]').value;
+                const submissionText = document.getElementById('submissionText').value;
+                const submissionFiles = document.getElementById('submissionFile').files;
+                
+                // Show loading state
+                const submitBtn = document.getElementById('submitBtn');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                submitBtn.disabled = true;
+                
+                // Create FormData object
+                const formData = new FormData();
+                formData.append('assignmentId', assignmentId);
+                formData.append('submissionText', submissionText);
+                
+                // Add all files to form data
+                for (let i = 0; i < submissionFiles.length; i++) {
+                    formData.append('attachments', submissionFiles[i]);
+                }
+                
+                // Log form data for debugging
+                console.log('Submitting assignment:', {
+                    assignmentId,
+                    submissionText,
+                    files: Array.from(submissionFiles).map(f => f.name)
+                });
+                
+                // Make API call
+                fetch('/api/submissions/submit', {
+                    method: 'POST',
+                    headers: {
+                        [header]: token
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    console.log('Submission response status:', response.status);
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            try {
+                                const error = JSON.parse(text);
+                                throw new Error(error.message || 'Failed to submit assignment');
+                            } catch (e) {
+                                throw new Error('Failed to submit assignment: ' + text);
+                            }
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Submission success:', data);
+                    showToast('Assignment submitted successfully!', 'success');
+                    document.getElementById('submitAssignmentModal').remove();
+                    
+                    // Reload page after a short delay to show updated status
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Submission error:', error);
+                    showToast(error.message || 'Error submitting assignment', 'error');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error loading assignment', 'error');
+        });
+    }
+    
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Download attachment function
+    function downloadAttachment(attachmentId, fileName) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Show loading toast
+        showToast('Downloading file...', 'info');
+        
+        fetch(`/api/attachments/${attachmentId}/download`, {
+            method: 'GET',
+            headers: {
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to download attachment');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create a link and trigger download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Show success message
+            showToast('File downloaded successfully', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error downloading file', 'error');
+        });
+    }
+    
+    // Add this function after the existing script functions
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get CSRF tokens for requests
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content") || '';
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content") || '';
+        
+        // Get all assignments and check their submission status
+        const assignments = document.querySelectorAll('.assignment-item');
+        
+        assignments.forEach(assignment => {
+            const assignmentId = assignment.querySelector('button').getAttribute('data-id');
+            const statusElement = assignment.querySelector('.assignment-status');
+            
+            // Only proceed if we have valid elements
+            if (!assignmentId || !statusElement) return;
+            
+            console.log('Checking submission status for assignment ID:', assignmentId);
+            
+            // Fetch submission status for this assignment and current user
+            fetch(`/api/submissions/check-status/${assignmentId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [header]: token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.submitted) {
+                    statusElement.textContent = 'Submitted';
+                    statusElement.className = 'assignment-status status-submitted';
+                    
+                    if (data.isLate) {
+                        statusElement.textContent = 'Late Submission';
+                        statusElement.className = 'assignment-status status-late';
+                    }
+                    
+                    if (data.isEvaluated) {
+                        statusElement.textContent = 'Evaluated';
+                        statusElement.className = 'assignment-status status-graded';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking submission status:', error);
+            });
+        });
+    });
 </script>
 
 </body>
