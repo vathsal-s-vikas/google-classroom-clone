@@ -241,7 +241,7 @@ public class TADashboardController {
         Submission submission = submissionService.getSubmissionById(submissionId).get();
         
         if (submission == null) {
-            return "redirect:/ta-view/dashboard";
+            return "redirect:/ta-dashboard";
         }
         
         Course course = submission.getAssignment().getCourse();
@@ -249,7 +249,7 @@ public class TADashboardController {
         boolean isTA = taMemberships.stream().anyMatch(membership -> membership.getUser().getId().equals(currentUser.getId()));
         
         if (!isTA) {
-            return "redirect:/ta-view/dashboard";
+            return "redirect:/ta-dashboard";
         }
         
         model.addAttribute("submission", submission);

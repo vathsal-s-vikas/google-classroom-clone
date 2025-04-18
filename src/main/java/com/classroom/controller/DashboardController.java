@@ -236,7 +236,7 @@ public class DashboardController {
 
     @GetMapping("/dashboard/ta")
     public String taDashboard() {
-        return "ta";
+        return "redirect:/ta-view/dashboard";
     }
 
     @GetMapping("/test-course-creation")

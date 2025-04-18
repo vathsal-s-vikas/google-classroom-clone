@@ -563,9 +563,11 @@
     <div class="topbar">
         <div class="left">Classroom | Teaching Assistant</div>
         <div class="right">
-            <div class="greet">Hello, <span th:text="${currentUser.name}">User</span>!</div>
+            <div class="greet" th:if="${currentUser != null}">Hello, <span th:text="${currentUser.name}">User</span>!</div>
+            <div class="greet" th:if="${currentUser == null}">Hello, User!</div>
             <div class="avatar" onclick="toggleDropdown()">
-                <span th:text="${currentUser.name.substring(0,1).toUpperCase()}">U</span>
+                <span th:if="${currentUser != null}" th:text="${currentUser.name.substring(0,1).toUpperCase()}">U</span>
+                <span th:if="${currentUser == null}">U</span>
             </div>
             <div class="dropdown" id="userDropdown">
                 <a href="/ta-dashboard">Dashboard</a>
@@ -694,12 +696,14 @@
                             <div class="course-description" th:text="${course.description}">
                                 Course description goes here. This is a longer text that will be truncated if it exceeds three lines.
                             </div>
-                            <div class="badge badge-primary" th:text="${course.students.size() + ' Students'}">25 Students</div>
+                            <div class="badge badge-primary" th:if="${course.students != null}" th:text="${course.students.size() + ' Students'}">25 Students</div>
+                            <div class="badge badge-primary" th:if="${course.students == null}">0 Students</div>
                         </div>
                         <div class="course-footer">
                             <div class="teacher-info">
                                 <span>Prof: </span>
-                                <span th:text="${course.teacher.name}">Teacher Name</span>
+                                <span th:if="${course.teacher != null}" th:text="${course.teacher.name}">Teacher Name</span>
+                                <span th:if="${course.teacher == null}">Unknown</span>
                             </div>
                             <div class="card-actions">
                                 <button class="view-course-btn" th:onclick="'window.location.href=\'/ta-view/course/' + ${course.id} + '\''; event.stopPropagation();">
