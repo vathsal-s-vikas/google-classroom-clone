@@ -10,6 +10,9 @@ import com.classroom.security.CustomAuthenticationConverter;
 import com.classroom.security.CustomUserDetails;
 import com.classroom.service.CourseMembershipService;
 import com.classroom.service.CourseService;
+import com.classroom.model.Assignment;
+import com.classroom.service.AssignmentService;
+import com.classroom.service.SubmissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +44,12 @@ public class TeacherController {
     
     @Autowired
     private CustomAuthenticationConverter authConverter;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private SubmissionService submissionService;
 
     private User getUserFromAuthentication(Authentication auth) {
         // First try to convert the authentication if needed
@@ -415,6 +425,49 @@ public class TeacherController {
             
             CourseDTO courseDTO = CourseDTO.fromEntity(course);
             return ResponseEntity.ok(courseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @GetMapping("/pending-assignments")
+    public ResponseEntity<List<Map<String, Object>>> getPendingAssignments() {
+        try {
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final User currentUser = getUserFromAuthentication(auth);
+            
+            // Get all courses taught by the teacher
+            List<Course> courses = courseService.getCoursesByTeacher(currentUser);
+            
+            // Get all assignments from these courses with submission counts
+            List<Map<String, Object>> assignmentsWithStats = new ArrayList<>();
+            
+            for (Course course : courses) {
+                List<Assignment> courseAssignments = assignmentService.getAssignmentsByCourse(course);
+                
+                for (Assignment assignment : courseAssignments) {
+                    Map<String, Object> assignmentData = new HashMap<>();
+                    assignmentData.put("id", assignment.getId());
+                    assignmentData.put("title", assignment.getTitle());
+                    assignmentData.put("courseId", course.getId());
+                    assignmentData.put("courseName", course.getName());
+                    assignmentData.put("deadline", assignment.getDeadline());
+                    assignmentData.put("maxMarks", assignment.getMaxMarks());
+                    assignmentData.put("assignmentType", assignment.getAssignmentType());
+                    
+                    // Get submission counts for this assignment
+                    long totalSubmissions = submissionService.countSubmissionsByAssignment(assignment);
+                    long pendingEvaluations = submissionService.countUnevaluatedSubmissionsByAssignment(assignment);
+                    
+                    assignmentData.put("totalSubmissions", totalSubmissions);
+                    assignmentData.put("pendingEvaluations", pendingEvaluations);
+                    
+                    assignmentsWithStats.add(assignmentData);
+                }
+            }
+            
+            return ResponseEntity.ok(assignmentsWithStats);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);

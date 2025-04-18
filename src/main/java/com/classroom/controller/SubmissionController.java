@@ -7,6 +7,7 @@ import com.classroom.security.CustomUserDetails;
 import com.classroom.service.AssignmentService;
 import com.classroom.service.SubmissionService;
 import com.classroom.service.SubmissionAttachmentService;
+import com.classroom.service.MarkService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/submissions")
@@ -38,6 +40,9 @@ public class SubmissionController {
 
     @Autowired
     private CustomAuthenticationConverter authConverter;
+    
+    @Autowired
+    private MarkService markService;
 
     private User getCurrentUser() {
         // First convert the authentication if needed
@@ -170,13 +175,16 @@ public class SubmissionController {
     }
     
     @GetMapping("/{submissionId}/attachments")
-    public ResponseEntity<List<SubmissionAttachment>> getSubmissionAttachments(@PathVariable Long submissionId) {
+    public ResponseEntity<?> getSubmissionAttachments(@PathVariable Long submissionId) {
         try {
             User currentUser = getCurrentUser();
             Optional<Submission> optSubmission = submissionService.getSubmissionById(submissionId);
             
             if (!optSubmission.isPresent()) {
-                return ResponseEntity.badRequest().body(null);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", true,
+                    "message", "Submission not found"
+                ));
             }
             
             Submission submission = optSubmission.get();
@@ -188,14 +196,34 @@ public class SubmissionController {
                     .equals(currentUser.getId());
             
             if (!isSubmitter && !isTeacher) {
-                return ResponseEntity.status(403).body(null);
+                return ResponseEntity.status(403).body(Map.of(
+                    "error", true,
+                    "message", "Not authorized to view these attachments"
+                ));
             }
             
             List<SubmissionAttachment> attachments = attachmentService.getAttachmentsBySubmission(submission);
-            return ResponseEntity.ok(attachments);
+            
+            // Convert to simplified DTOs to avoid circular references
+            List<Map<String, Object>> simplifiedAttachments = attachments.stream()
+                .map(attachment -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("id", attachment.getId());
+                    dto.put("fileName", attachment.getFileName());
+                    dto.put("fileType", attachment.getFileType());
+                    dto.put("fileSize", attachment.getFileSize());
+                    dto.put("fileUrl", attachment.getFileUrl());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(simplifiedAttachments);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", true,
+                "message", "Error fetching attachments: " + e.getMessage()
+            ));
         }
     }
     
@@ -232,7 +260,7 @@ public class SubmissionController {
     }
     
     @GetMapping("/assignment/{assignmentId}")
-    public ResponseEntity<List<Submission>> getSubmissionsByAssignment(@PathVariable Long assignmentId) {
+    public ResponseEntity<?> getSubmissionsByAssignment(@PathVariable Long assignmentId) {
         try {
             User currentUser = getCurrentUser();
             
@@ -247,15 +275,51 @@ public class SubmissionController {
             // Get submissions
             List<Submission> submissions = submissionService.getSubmissionsByAssignment(assignment);
             
-            return ResponseEntity.ok(submissions);
+            // Convert to simplified DTOs to avoid circular references
+            List<Map<String, Object>> simplifiedSubmissions = submissions.stream()
+                .map(submission -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("id", submission.getId());
+                    
+                    // Simplified student info
+                    if (submission.getStudent() != null) {
+                        Map<String, Object> studentInfo = new HashMap<>();
+                        studentInfo.put("id", submission.getStudent().getId());
+                        studentInfo.put("name", submission.getStudent().getName());
+                        dto.put("student", studentInfo);
+                    }
+                    
+                    // Simplified team info if applicable
+                    if (submission.getTeam() != null) {
+                        Map<String, Object> teamInfo = new HashMap<>();
+                        teamInfo.put("id", submission.getTeam().getId());
+                        teamInfo.put("name", "Team " + submission.getTeam().getId());
+                        dto.put("team", teamInfo);
+                    }
+                    
+                    // Basic submission details
+                    dto.put("submissionText", submission.getSubmissionText());
+                    dto.put("submittedAt", submission.getSubmittedAt());
+                    dto.put("isLate", submission.isLate());
+                    dto.put("daysLate", submission.getDaysLate());
+                    dto.put("isEvaluated", submission.isEvaluated());
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(simplifiedSubmissions);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", true,
+                "message", "Error fetching submissions: " + e.getMessage()
+            ));
         }
     }
     
     @GetMapping("/{submissionId}")
-    public ResponseEntity<Submission> getSubmission(@PathVariable Long submissionId) {
+    public ResponseEntity<?> getSubmission(@PathVariable Long submissionId) {
         try {
             User currentUser = getCurrentUser();
             Optional<Submission> optSubmission = submissionService.getSubmissionById(submissionId);
@@ -276,10 +340,46 @@ public class SubmissionController {
                 return ResponseEntity.status(403).body(null);
             }
             
-            return ResponseEntity.ok(submission);
+            // Create a simplified DTO to avoid circular references
+            Map<String, Object> submissionDto = new HashMap<>();
+            submissionDto.put("id", submission.getId());
+            
+            // Add student info if present
+            if (submission.getStudent() != null) {
+                Map<String, Object> studentInfo = new HashMap<>();
+                studentInfo.put("id", submission.getStudent().getId());
+                studentInfo.put("name", submission.getStudent().getName());
+                submissionDto.put("student", studentInfo);
+            }
+            
+            // Add team info if present
+            if (submission.getTeam() != null) {
+                Map<String, Object> teamInfo = new HashMap<>();
+                teamInfo.put("id", submission.getTeam().getId());
+                teamInfo.put("name", "Team " + submission.getTeam().getId());
+                submissionDto.put("team", teamInfo);
+            }
+            
+            // Add assignment info
+            Map<String, Object> assignmentInfo = new HashMap<>();
+            assignmentInfo.put("id", submission.getAssignment().getId());
+            assignmentInfo.put("title", submission.getAssignment().getTitle());
+            submissionDto.put("assignment", assignmentInfo);
+            
+            // Add submission details
+            submissionDto.put("submissionText", submission.getSubmissionText());
+            submissionDto.put("submittedAt", submission.getSubmittedAt());
+            submissionDto.put("isLate", submission.isLate());
+            submissionDto.put("daysLate", submission.getDaysLate());
+            submissionDto.put("isEvaluated", submission.isEvaluated());
+            
+            return ResponseEntity.ok(submissionDto);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", true,
+                "message", "Error fetching submission: " + e.getMessage()
+            ));
         }
     }
     
@@ -428,6 +528,77 @@ public class SubmissionController {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "message", "Error checking submission status: " + e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/teacher/submission/{submissionId}/evaluate")
+    public ResponseEntity<?> evaluateSubmission(
+            @PathVariable Long submissionId,
+            @RequestBody Map<String, Object> requestBody) {
+        
+        try {
+            User currentUser = getCurrentUser();
+            
+            // Get the submission
+            Optional<Submission> submissionOpt = submissionService.getSubmissionById(submissionId);
+            if (submissionOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Submission not found"
+                ));
+            }
+            
+            Submission submission = submissionOpt.get();
+            
+            // Check if current user is the teacher of the course
+            boolean isTeacher = submission.getAssignment().getCourse().getTeacher().getId()
+                    .equals(currentUser.getId());
+            
+            if (!isTeacher) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Only the teacher can evaluate submissions"
+                ));
+            }
+            
+            // Get data from request
+            Integer score = (Integer) requestBody.get("score");
+            String feedback = (String) requestBody.get("feedback");
+            
+            if (score == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Score is required"
+                ));
+            }
+            
+            // Calculate penalty if submission is late
+            Integer penaltyPercentage = 0;
+            if (submission.isLate() && submission.getAssignment().isLateSubmissionAllowed()) {
+                penaltyPercentage = submission.getAssignment().getLatePenaltyPercentage();
+            }
+            
+            // Use MarkService to create mark
+            try {
+                markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+                
+                return ResponseEntity.ok().body(Map.of(
+                    "success", true,
+                    "message", "Submission evaluated successfully"
+                ));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Error evaluating submission: " + e.getMessage()
+                ));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error evaluating submission: " + e.getMessage()
             ));
         }
     }

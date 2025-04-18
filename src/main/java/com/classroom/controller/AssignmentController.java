@@ -4,6 +4,7 @@ import com.classroom.dto.AssignmentDTO;
 import com.classroom.model.Assignment;
 import com.classroom.model.AssignmentAttachment;
 import com.classroom.model.Course;
+import com.classroom.model.Submission;
 import com.classroom.model.User;
 import com.classroom.repository.UserRepository;
 import com.classroom.security.CustomAuthenticationConverter;
@@ -11,11 +12,14 @@ import com.classroom.security.CustomUserDetails;
 import com.classroom.service.AssignmentAttachmentService;
 import com.classroom.service.AssignmentService;
 import com.classroom.service.CourseService;
+import com.classroom.service.SubmissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,6 +48,9 @@ public class AssignmentController {
     
     @Autowired
     private AssignmentAttachmentService attachmentService;
+
+    @Autowired
+    private SubmissionService submissionService;
 
     private User getCurrentUser() {
         // First convert the authentication if needed

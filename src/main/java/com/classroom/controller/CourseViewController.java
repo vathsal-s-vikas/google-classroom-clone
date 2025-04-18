@@ -8,6 +8,7 @@ import com.classroom.security.CustomUserDetails;
 import com.classroom.service.AssignmentService;
 import com.classroom.service.CourseMembershipService;
 import com.classroom.service.CourseService;
+import com.classroom.service.SubmissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
@@ -31,6 +33,9 @@ public class CourseViewController {
     
     @Autowired
     private AssignmentService assignmentService;
+    
+    @Autowired
+    private SubmissionService submissionService;
     
     @Autowired
     private CustomAuthenticationConverter authConverter;
@@ -115,6 +120,19 @@ public class CourseViewController {
         
         // Get course assignments - Force fetch to ensure we have the latest
         List<Assignment> assignments = assignmentService.getAssignmentsByCourse(course);
+        
+        // Enhance assignments with submission status for this student
+        for (Assignment assignment : assignments) {
+            Optional<Submission> submission = submissionService.getSubmissionByAssignmentAndStudent(assignment, currentUser);
+            if (submission.isPresent()) {
+                assignment.setSubmitted(true);
+                assignment.setSubmissionDate(submission.get().getSubmittedAt());
+                assignment.setEvaluated(submission.get().isEvaluated());
+            } else {
+                assignment.setSubmitted(false);
+                assignment.setEvaluated(false);
+            }
+        }
         
         // Add data to the model
         model.addAttribute("course", CourseDTO.fromEntity(course));

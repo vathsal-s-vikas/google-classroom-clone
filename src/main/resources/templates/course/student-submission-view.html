@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Submission</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --warning-color: #FBBC05;
+            --danger-color: #EA4335;
+            --hover-color: #1557af;
+            --text-color: #3c4043;
+            --border-color: #dadce0;
+            --sidebar-bg: #f8f9fa;
+            --card-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --success-color: #34A853;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Google Sans', Arial, sans-serif;
+        }
+        
+        body {
+            color: var(--text-color);
+            background-color: #f1f3f4;
+            line-height: 1.6;
+        }
+        
+        /* Top Bar Styles */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: white;
+            padding: 0.8rem 1.5rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-text {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .course-name {
+            font-size: 1.1rem;
+            padding-left: 20px;
+            border-left: 1px solid var(--border-color);
+            margin-left: 10px;
+        }
+        
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Navigation Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 0.5rem;
+            color: #888;
+        }
+        
+        .breadcrumb-current {
+            color: #555;
+            font-weight: 500;
+        }
+        
+        /* Container Styles */
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        /* Submission Card Styles */
+        .submission-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .assignment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .assignment-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .assignment-score {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .score-value {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-submitted {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+        
+        .status-graded {
+            background-color: #e6f4ea;
+            color: #137333;
+        }
+        
+        .status-late {
+            background-color: #fce8e6;
+            color: #d93025;
+        }
+        
+        .submission-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .detail-row {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .detail-label {
+            min-width: 120px;
+            font-weight: 500;
+        }
+        
+        .submission-text {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+        }
+        
+        /* Attachments Section */
+        .attachments-section {
+            margin-top: 1.5rem;
+        }
+        
+        .attachments-header {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .attachment-icon {
+            margin-right: 0.75rem;
+            color: #5f6368;
+        }
+        
+        .attachment-name {
+            flex-grow: 1;
+        }
+        
+        .attachment-download {
+            color: var(--primary-color);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .attachment-download:hover {
+            color: var(--hover-color);
+        }
+        
+        /* Submission Comment */
+        .feedback-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .feedback-header {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .no-feedback {
+            color: #5f6368;
+            font-style: italic;
+        }
+        
+        /* Buttons */
+        .button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .button-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .button-outline {
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            background-color: transparent;
+        }
+        
+        .button-outline:hover {
+            background-color: rgba(26, 115, 232, 0.04);
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="logo-section">
+            <a href="/dashboard/student" style="text-decoration: none; color: inherit;">
+                <div class="logo-text">Classroom</div>
+            </a>
+            <div class="course-name" th:if="${course != null}" th:text="${course.name}">Course Name</div>
+        </div>
+        <div class="avatar" th:if="${currentUser != null}" 
+             th:text="${currentUser.name != null ? #strings.substring(currentUser.name, 0, 1) : 'U'}">U</div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb">
+            <a href="/dashboard/student">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a th:if="${course != null}" th:href="@{/student/course/{courseId}(courseId=${course.id})}" 
+               th:text="${course.name}">Course Name</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">My Submission</span>
+        </div>
+        
+        <div class="submission-card">
+            <div class="assignment-header">
+                <h1 class="assignment-title" th:if="${assignment != null}" th:text="${assignment.title}">Assignment Title</h1>
+                <h1 class="assignment-title" th:unless="${assignment != null}">Assignment</h1>
+                <!-- Graded submission -->
+                <div class="assignment-score" th:if="${submission != null && submission.isEvaluated}">
+                    <span class="score-value" th:text="${submission.mark != null && submission.mark.rawMarks != null ? submission.mark.rawMarks + '/' + assignment.maxMarks : 'Not graded'}">
+                        90/100
+                    </span>
+                    <span class="status-badge status-graded">Graded</span>
+                </div>
+                <!-- Ungraded submission -->
+                <div class="assignment-score" th:if="${submission != null && !submission.isEvaluated}">
+                    <span class="status-badge" th:classappend="${submission.isLate ? 'status-late' : 'status-submitted'}" 
+                          th:text="${submission.isLate ? 'Turned in late' : 'Turned in'}">
+                        Submitted
+                    </span>
+                </div>
+            </div>
+            
+            <div class="submission-details" th:if="${assignment != null && submission != null}">
+                <div class="detail-row">
+                    <span class="detail-label">Due Date:</span>
+                    <span th:text="${#temporals.format(assignment.deadline, 'MMM dd, yyyy, hh:mm a')}">May 15, 2023, 11:59 PM</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Submitted On:</span>
+                    <span th:text="${#temporals.format(submission.submittedAt, 'MMM dd, yyyy, hh:mm a')}">May 14, 2023, 10:30 PM</span>
+                </div>
+                <div class="detail-row" th:if="${submission.isLate}">
+                    <span class="detail-label">Days Late:</span>
+                    <span th:text="${submission.daysLate}">1</span>
+                </div>
+            </div>
+            
+            <div class="submission-text" th:if="${submission != null && submission.submissionText != null && !#strings.isEmpty(submission.submissionText)}"
+                 th:text="${submission.submissionText}">
+                This is the submission text provided by the student.
+            </div>
+            
+            <!-- Attachments Section -->
+            <div class="attachments-section" th:if="${attachments != null && !attachments.isEmpty()}">
+                <h2 class="attachments-header">Attachments</h2>
+                <div class="attachment-item" th:each="attachment : ${attachments}">
+                    <i class="attachment-icon fas fa-file"></i>
+                    <span class="attachment-name" th:text="${attachment.fileName}">document.pdf</span>
+                    <a class="attachment-download" th:href="@{/download/submission-attachment/{id}(id=${attachment.id})}">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Feedback Section -->
+            <div class="feedback-section" th:if="${submission != null && submission.isEvaluated}">
+                <h2 class="feedback-header">Teacher's Feedback</h2>
+                <div th:if="${submission.mark != null && submission.mark.feedback != null && !#strings.isEmpty(submission.mark.feedback)}"
+                     th:text="${submission.mark.feedback}" class="submission-text">
+                    Great job on this assignment!
+                </div>
+                <div th:unless="${submission.mark != null && submission.mark.feedback != null && !#strings.isEmpty(submission.mark.feedback)}"
+                     class="no-feedback">
+                    No feedback provided.
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="actions">
+                <a th:if="${course != null}" th:href="@{/student/course/{courseId}(courseId=${course.id})}" class="button button-outline">Back to Course</a>
+                <a th:unless="${course != null}" href="/dashboard/student" class="button button-outline">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

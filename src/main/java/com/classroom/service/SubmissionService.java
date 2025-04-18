@@ -91,6 +91,36 @@ public class SubmissionService {
     }
 
     /**
+     * Count all submissions for an assignment
+     * Explicit getter method to ensure accessibility
+     */
+    public long countSubmissionsByAssignment(Assignment assignment) {
+        return submissionRepository.countByAssignment(assignment);
+    }
+    
+    /**
+     * Explicit getter method for counting submissions by assignment
+     */
+    public long getCountSubmissionsByAssignment(Assignment assignment) {
+        return countSubmissionsByAssignment(assignment);
+    }
+
+    /**
+     * Count all unevaluated submissions for an assignment
+     * Explicit getter method to ensure accessibility
+     */
+    public long countUnevaluatedSubmissionsByAssignment(Assignment assignment) {
+        return getUnevaluatedSubmissionsByAssignment(assignment).size();
+    }
+    
+    /**
+     * Explicit getter method for counting unevaluated submissions by assignment
+     */
+    public long getCountUnevaluatedSubmissionsByAssignment(Assignment assignment) {
+        return countUnevaluatedSubmissionsByAssignment(assignment);
+    }
+
+    /**
      * Create a new submission for an individual student
      */
     @Transactional

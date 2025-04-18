@@ -26,6 +26,12 @@ public class User {
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
     @Column(unique = true, nullable = false)
     private String email;
 
@@ -53,46 +59,57 @@ public class User {
     // Bidirectional relationships
     @OneToMany(mappedBy = "teacher")
     @JsonIgnore
+    @Builder.Default
     private Set<Course> taughtCourses = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
     @JsonIgnore
+    @Builder.Default
     private Set<CourseMembership> courseMemberships = new HashSet<>();
 
     @OneToMany(mappedBy = "uploader")
     @JsonIgnore
+    @Builder.Default
     private Set<Content> uploadedContents = new HashSet<>();
 
     @OneToMany(mappedBy = "createdBy")
     @JsonIgnore
+    @Builder.Default
     private Set<Team> createdTeams = new HashSet<>();
 
     @OneToMany(mappedBy = "student")
     @JsonIgnore
+    @Builder.Default
     private Set<TeamMembership> teamMemberships = new HashSet<>();
 
     @OneToMany(mappedBy = "student")
     @JsonIgnore
+    @Builder.Default
     private Set<Submission> individualSubmissions = new HashSet<>();
 
     @OneToMany(mappedBy = "evaluator")
     @JsonIgnore
+    @Builder.Default
     private Set<Mark> evaluatedSubmissions = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
     @JsonIgnore
+    @Builder.Default
     private Set<Notification> notifications = new HashSet<>();
 
     @OneToMany(mappedBy = "ta")
     @JsonIgnore
+    @Builder.Default
     private Set<TAStudentAssignment> assignedStudents = new HashSet<>();
 
     @OneToMany(mappedBy = "student")
     @JsonIgnore
+    @Builder.Default
     private Set<TAStudentAssignment> assignedTA = new HashSet<>();
 
     @OneToMany(mappedBy = "ta")
     @JsonIgnore
+    @Builder.Default
     private Set<PermissionSettings> permissions = new HashSet<>();
 
     public void setCreatedAt(LocalDateTime createdAt) {
@@ -205,6 +222,32 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getFirstName() {
+        if (firstName != null) {
+            return firstName;
+        }
+        // Extract from name if firstName is not set
+        String[] nameParts = name != null ? name.split(" ", 2) : new String[]{"User"};
+        return nameParts[0];
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        if (lastName != null) {
+            return lastName;
+        }
+        // Extract from name if lastName is not set
+        String[] nameParts = name != null ? name.split(" ", 2) : new String[]{"", "Name"};
+        return nameParts.length > 1 ? nameParts[1] : "";
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getPassword() {

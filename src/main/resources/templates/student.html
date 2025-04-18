@@ -18,14 +18,14 @@
             margin: 0;
             padding: 0;
         }
-        
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background-color: #f4f6f9;
             margin: 0;
             line-height: 1.6;
         }
-        
+
         .topbar {
             background-color: #3f51b5;
             color: white;
@@ -120,7 +120,7 @@
             font-size: 1.2rem;
             font-weight: 500;
         }
-        
+
         .sidebar-menu {
             list-style: none;
             padding: 1.5rem 0;
@@ -168,7 +168,7 @@
             align-items: center;
             margin-bottom: 2rem;
         }
-        
+
         .content-header h2 {
             margin: 0;
             color: #333;
@@ -189,11 +189,11 @@
             background-color: #3f51b5;
             color: white;
         }
-        
+
         .btn-primary:hover {
             background-color: #303f9f;
         }
-        
+
         .courses-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -283,7 +283,7 @@
             color: #555;
             margin-bottom: 0.5rem;
         }
-        
+
         .empty-state p {
             color: #777;
             max-width: 400px;
@@ -363,6 +363,137 @@
             bottom: 50px;
         }
         
+        /* Notification styles */
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .notification-bell i {
+            font-size: 1.2rem;
+            color: white;
+        }
+        
+        #notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ff5252;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        
+        #notificationDropdown {
+            position: absolute;
+            top: 100%;
+            right: -20px;
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 200;
+            margin-top: 8px;
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .notification-header h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .mark-all-read {
+            font-size: 0.8rem;
+            color: #3f51b5;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: #e8eaf6;
+            border: none;
+        }
+        
+        .mark-all-read:hover {
+            background-color: #c5cae9;
+        }
+        
+        .notification-list {
+            padding: 0;
+        }
+        
+        .notification-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: default;
+            transition: background-color 0.2s;
+        }
+        
+        .notification-item:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .notification-item.unread {
+            background-color: #e8eaf6;
+        }
+        
+        .notification-item.unread:hover {
+            background-color: #d1d6f0;
+        }
+        
+        .notification-content {
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        
+        .notification-time {
+            color: #666;
+            font-size: 0.75rem;
+        }
+        
+        .notification-actions {
+            margin-top: 8px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .notification-action {
+            padding: 4px 8px;
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .notification-action:hover {
+            background-color: #303f9f;
+        }
+        
+        .notification-empty {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
         /* Responsive adjustments */
         @media (max-width: 991px) {
             .container {
@@ -373,6 +504,195 @@
                 display: none;
             }
         }
+        
+        /* Dashboard section styles */
+        .dashboard-section {
+            display: none;
+        }
+        
+        .dashboard-section.active {
+            display: block;
+        }
+        
+        /* Assignment item styles */
+        .assignment-item {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .assignment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .assignment-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        
+        .course-name {
+            color: #3f51b5;
+            font-weight: 500;
+        }
+        
+        .assignment-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .deadline, .submission-date, .grade {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #3f51b5;
+            color: #3f51b5;
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(63, 81, 181, 0.1);
+        }
+        
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.awaiting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.missed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .text-danger {
+            color: #dc3545;
+        }
+        
+        .deadline-warning {
+            font-weight: 500;
+            color: #dc3545;
+        }
+        
+        .grades-container h3 {
+            margin: 1.5rem 0 1rem;
+            font-size: 1.2rem;
+            color: #555;
+        }
+        
+        .course-card.archived {
+            opacity: 0.7;
+        }
+        
+        .course-card.archived .course-header {
+            background-color: #78909c;
+        }
+        
+        /* Grade styles */
+        .grade-info {
+            display: flex;
+            flex-direction: column;
+            margin-left: 0.5rem;
+        }
+        
+        .grade-value {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .grade-value strong {
+            color: #3f51b5;
+            font-size: 1.1rem;
+        }
+        
+        .grade-penalty {
+            color: #dc3545;
+            font-size: 0.85rem;
+        }
+        
+        .grade-evaluated {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        /* Feedback styles */
+        .feedback-preview {
+            margin-top: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px dashed #eee;
+        }
+        
+        .feedback-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+        
+        .feedback-content {
+            background-color: #f8f9fa;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-style: italic;
+            color: #555;
+            font-size: 0.95rem;
+        }
+        
+        /* Improve btn-outline styles */
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #3f51b5;
+            color: #3f51b5;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(63, 81, 181, 0.1);
+        }
+        
+        /* Submission date and status styles */
+        .submission-date {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+        
+        .late-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: #dc3545;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+        
+        .submission-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -382,8 +702,22 @@
         <span>Classroom</span>
     </div>
     <div class="right">
-        <span th:text="${currentUser != null ? 'Welcome, ' + currentUser.name : 'Welcome, Student'}">Welcome, Student</span>
-        <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser != null && currentUser.name != null && !currentUser.name.isEmpty() ? currentUser.name.substring(0,1).toUpperCase() : 'S'}">S</div>
+        <div class="notification-bell" onclick="toggleNotifications()">
+            <i class="fas fa-bell"></i>
+            <span id="notification-badge" style="display: none;">0</span>
+            
+            <div id="notificationDropdown">
+                <div class="notification-header">
+                    <h3>Notifications</h3>
+                    <button class="mark-all-read" onclick="markAllNotificationsAsRead(event)">Mark all as read</button>
+                </div>
+                <div class="notification-list">
+                    <div class="notification-loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <span th:text="'Welcome, ' + ${currentUser.name}">Welcome, Student</span>
+        <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser.name.substring(0,1).toUpperCase()}">S</div>
         <div class="dropdown" id="avatarDropdown">
             <a href="/settings">Settings</a>
             <a href="/logout">Logout</a>
@@ -391,74 +725,201 @@
     </div>
 </div>
 
+<!-- Debug panel - hidden by default, can be shown for debugging -->
+<div id="debug-panel" style="display: none; padding: 10px; background-color: #f8f9fa; border: 1px solid #ddd; margin: 10px; overflow: auto; max-height: 300px;">
+    <h3>Debug Information</h3>
+    <p>Dashboard loaded successfully.</p>
+    <p>Data counts:</p>
+    <ul>
+        <li>Pending assignments: <span th:text="${pendingAssignments != null ? pendingAssignments.size() : 0}">0</span></li>
+        <li>Unevaluated submissions: <span th:text="${unevaluatedSubmissions != null ? unevaluatedSubmissions.size() : 0}">0</span></li>
+        <li>Evaluated submissions: <span th:text="${evaluatedSubmissions != null ? evaluatedSubmissions.size() : 0}">0</span></li>
+        <li>Missed assignments: <span th:text="${missedAssignments != null ? missedAssignments.size() : 0}">0</span></li>
+    </ul>
+</div>
+
 <div class="container">
-    <div class="sidebar">
+<div class="sidebar">
         <div class="sidebar-header">
             <h2>Student Dashboard</h2>
         </div>
         <ul class="sidebar-menu">
             <li>
-                <a href="#" class="active">
+                <a href="#" class="active" onclick="showSection('classes')">
                     <span class="icon"><i class="fas fa-th-large"></i></span>
                     <span>My Classes</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="#" onclick="showSection('assignments')">
                     <span class="icon"><i class="fas fa-tasks"></i></span>
                     <span>Assignments</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="#" onclick="showSection('grades')">
                     <span class="icon"><i class="fas fa-trophy"></i></span>
                     <span>Grades</span>
                 </a>
             </li>
-            <li>
-                <a href="#">
-                    <span class="icon"><i class="fas fa-archive"></i></span>
-                    <span>Archived</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-    
+    </ul>
+</div>
+
     <div class="content">
-        <div class="content-header">
-            <h2>My Classes</h2>
-            <button class="btn btn-primary" onclick="openJoinModal()">
-                <i class="fas fa-plus"></i> Join Class
-            </button>
+        <!-- Classes Section -->
+        <div id="classes-section" class="dashboard-section active">
+            <div class="content-header">
+                <h2>My Classes</h2>
+                <button class="btn btn-primary" onclick="openJoinModal()">
+                    <i class="fas fa-plus"></i> Join Class
+                </button>
+            </div>
+            
+            <div class="courses-grid" th:if="${not #lists.isEmpty(courses)}">
+                <a th:each="course : ${courses}" th:if="${!course.archived}" th:href="@{/student/course/{id}(id=${course.id})}" class="course-card">
+                    <div class="course-header">
+                        <div class="course-title" th:text="${course.name}">Mathematics 101</div>
+                        <div class="course-code" th:text="${course.courseCode}">MATH101</div>
+                    </div>
+                    <div class="course-body">
+                        <div class="course-teacher">
+                            <div class="teacher-avatar" th:text="${course.teacher != null && course.teacher.name != null && !course.teacher.name.isEmpty() ? course.teacher.name.substring(0,1).toUpperCase() : 'T'}">T</div>
+                            <span th:text="${course.teacher != null ? course.teacher.name : 'Teacher'}">Mrs. Smith</span>
+                        </div>
+                    </div>
+                    <div class="course-footer">
+                        <span th:text="${course.createdAt != null ? #temporals.format(course.createdAt, 'MMM dd, yyyy') : 'Unknown date'}">May 15, 2023</span>
+                    </div>
+                </a>
+            </div>
+            
+            <div th:if="${#lists.isEmpty(courses)}" class="empty-state">
+                <div class="icon">
+                    <i class="fas fa-book-reader"></i>
+                </div>
+                <h3>No Classes Yet</h3>
+                <p>You haven't joined any classes yet. Use the "Join Class" button to get started.</p>
+            </div>
         </div>
         
-        <div class="courses-grid" th:if="${not #lists.isEmpty(courses)}">
-            <a th:each="course : ${courses}" th:href="@{/student/course/{id}(id=${course.id})}" class="course-card">
-                <div class="course-header">
-                    <div class="course-title" th:text="${course.name}">Mathematics 101</div>
-                    <div class="course-code" th:text="${course.courseCode}">MATH101</div>
-                </div>
-                <div class="course-body">
-                    <div class="course-teacher">
-                        <div class="teacher-avatar" th:text="${course.teacher != null && course.teacher.name != null && !course.teacher.name.isEmpty() ? course.teacher.name.substring(0,1).toUpperCase() : 'T'}">T</div>
-                        <span th:text="${course.teacher != null ? course.teacher.name : 'Teacher'}">Mrs. Smith</span>
+        <!-- Assignments Section -->
+        <div id="assignments-section" class="dashboard-section">
+            <div class="content-header">
+                <h2>Pending Assignments</h2>
+            </div>
+            
+            <div class="assignments-list" th:if="${not #lists.isEmpty(pendingAssignments)}">
+                <div th:each="assignment : ${pendingAssignments}" class="assignment-item">
+                    <div class="assignment-header">
+                        <div class="assignment-title" th:text="${assignment.title != null ? assignment.title : 'Assignment'}">Assignment Title</div>
+                        <div class="course-name" th:text="${assignment.courseName != null ? assignment.courseName : 'Course'}">Course Name</div>
+                    </div>
+                    <div class="assignment-details">
+                        <div class="deadline">
+                            <i class="fas fa-clock"></i>
+                            <span>Due date</span>
+                        </div>
+                        <a href="/dashboard/student" class="btn btn-outline">
+                            Dashboard
+                        </a>
                     </div>
                 </div>
-                <div class="course-footer">
-                    <span th:text="${course.createdAt != null ? #temporals.format(course.createdAt, 'MMM dd, yyyy') : 'Unknown date'}">May 15, 2023</span>
+            </div>
+            
+            <div th:if="${#lists.isEmpty(pendingAssignments)}" class="empty-state">
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
                 </div>
-            </a>
+                <h3>No Pending Assignments</h3>
+                <p>You're all caught up! Check back later for new assignments.</p>
+            </div>
         </div>
         
-        <div th:if="${#lists.isEmpty(courses)}" class="empty-state">
-            <div class="icon">
-                <i class="fas fa-book-reader"></i>
+        <!-- Grades Section -->
+        <div id="grades-section" class="dashboard-section">
+            <div class="content-header">
+                <h2>Grades</h2>
             </div>
-            <h3>No Classes Yet</h3>
-            <p>You haven't joined any classes yet. Use the "Join Class" button to get started.</p>
+            
+            <div th:if="${not #lists.isEmpty(unevaluatedSubmissions) || not #lists.isEmpty(evaluatedSubmissions) || not #lists.isEmpty(missedAssignments)}" class="grades-container">
+                <!-- Missed Assignments -->
+                <div class="missed-assignments" th:if="${not #lists.isEmpty(missedAssignments)}">
+                    <h3>Missed Assignments</h3>
+                    <div class="assignment-item" th:each="assignment : ${missedAssignments}">
+                        <div class="assignment-header">
+                            <div class="assignment-title" th:text="${assignment.title != null ? assignment.title : 'Assignment'}">Assignment Title</div>
+                            <div class="course-name" th:text="${assignment.courseName != null ? assignment.courseName : 'Course'}">Course Name</div>
+                        </div>
+                        <div class="assignment-details">
+                            <div class="deadline">
+                                <i class="fas fa-calendar-times text-danger"></i>
+                                <span>Deadline passed</span>
+                            </div>
+                            <div class="status-badge missed">Not Submitted</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Awaiting Evaluation -->
+                <div class="waiting-evaluation" th:if="${not #lists.isEmpty(unevaluatedSubmissions)}">
+                    <h3>Waiting for Evaluation</h3>
+                    <div class="assignment-item" th:each="submission : ${unevaluatedSubmissions}">
+                        <div class="assignment-header">
+                            <div class="assignment-title" th:text="${submission.title != null ? submission.title : 'Assignment'}">Assignment Title</div>
+                            <div class="course-name" th:text="${submission.courseName != null ? submission.courseName : 'Course'}">Course Name</div>
+                        </div>
+                        <div class="assignment-details">
+                            <div class="submission-date">
+                                <i class="fas fa-upload"></i>
+                                <span>Submitted</span>
+                            </div>
+                            <div class="submission-actions">
+                                <div class="status-badge awaiting">Awaiting Evaluation</div>
+                                <a th:if="${submission.courseId != null && submission.id != null}" 
+                                   th:href="@{/student/course/{courseId}/assignment/{assignmentId}/submission(courseId=${submission.courseId}, assignmentId=${submission.id})}" 
+                                   class="btn btn-outline">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Evaluated Assignments -->
+                <div class="evaluated" th:if="${not #lists.isEmpty(evaluatedSubmissions)}">
+                    <h3>Evaluated Assignments</h3>
+                    <div class="assignment-item" th:each="submission : ${evaluatedSubmissions}">
+                        <div class="assignment-header">
+                            <div class="assignment-title" th:text="${submission.title != null ? submission.title : 'Assignment'}">Assignment Title</div>
+                            <div class="course-name" th:text="${submission.courseName != null ? submission.courseName : 'Course'}">Course Name</div>
+                        </div>
+                        <div class="assignment-details">
+                            <div class="grade">
+                                <i class="fas fa-award"></i>
+                                <span class="grade-info">
+                                    <span class="grade-evaluated">Evaluated</span>
+                                </span>
+                            </div>
+                            <a th:if="${submission.courseId != null && submission.id != null}" 
+                               th:href="@{/student/course/{courseId}/assignment/{assignmentId}/submission(courseId=${submission.courseId}, assignmentId=${submission.id})}" 
+                               class="btn btn-outline">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${#lists.isEmpty(unevaluatedSubmissions) && #lists.isEmpty(evaluatedSubmissions) && #lists.isEmpty(missedAssignments)}" class="empty-state">
+                <div class="icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3>No Graded Assignments</h3>
+                <p>You haven't submitted any assignments yet, or your submissions are still being evaluated.</p>
+            </div>
         </div>
     </div>
-</div>
+    </div>
 
 <!-- Join Class Modal -->
 <div id="joinModal" class="modal">
@@ -485,11 +946,28 @@
         dropdown.classList.toggle('show');
     }
     
+    // Toggle debug panel
+    function toggleDebugPanel() {
+        const debugPanel = document.getElementById('debug-panel');
+        if (debugPanel.style.display === 'none') {
+            debugPanel.style.display = 'block';
+        } else {
+            debugPanel.style.display = 'none';
+        }
+    }
+    
     // Close dropdown if clicked outside
     document.addEventListener('click', function(e) {
         const dropdown = document.getElementById('avatarDropdown');
         if (!e.target.closest('.avatar') && dropdown.classList.contains('show')) {
             dropdown.classList.remove('show');
+        }
+        
+        // Close notification dropdown if clicked outside
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        if (notificationDropdown && notificationDropdown.style.display === 'block' && 
+            !e.target.closest('.notification-bell')) {
+            notificationDropdown.style.display = 'none';
         }
     });
     
@@ -564,6 +1042,348 @@
             showToast(error.message || 'Error joining class. Please check the code and try again.', 'error');
             console.error('Error:', error);
         });
+    });
+    
+    // Section switching
+    function showSection(sectionName) {
+        // Only allow valid section names: 'classes', 'assignments', 'grades'
+        if (!['classes', 'assignments', 'grades'].includes(sectionName)) {
+            sectionName = 'classes'; // Default to classes if invalid section name
+        }
+        
+        // Hide all sections
+        document.querySelectorAll('.dashboard-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // Remove active class from all sidebar menu items
+        document.querySelectorAll('.sidebar-menu a').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Show selected section
+        document.getElementById(sectionName + '-section').classList.add('active');
+        
+        // Add active class to selected sidebar menu item
+        document.querySelector(`.sidebar-menu a[onclick="showSection('${sectionName}')"]`).classList.add('active');
+    }
+    
+    // Toggle notifications dropdown
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notificationDropdown');
+        const isVisible = dropdown.style.display === 'block';
+        
+        dropdown.style.display = isVisible ? 'none' : 'block';
+        
+        if (!isVisible) {
+            fetchNotifications();
+        }
+    }
+    
+    // Fetch notifications
+    function fetchNotifications() {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch('/api/notifications', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const notificationList = document.querySelector('.notification-list');
+            
+            if (data.length === 0) {
+                notificationList.innerHTML = '<div class="notification-empty">No notifications yet</div>';
+            } else {
+                notificationList.innerHTML = data.map(notification => {
+                    const date = new Date(notification.createdAt);
+                    const formattedDate = formatRelativeTime(date);
+                    
+                    let actionBtn = '';
+                    
+                    // Add specific action buttons based on notification type
+                    if (notification.notificationType === 'COURSE_INVITATION') {
+                        actionBtn = `
+                            <div class="notification-actions">
+                                <button class="notification-action" onclick="acceptCourseInvitation(${notification.relatedId}, ${notification.id})">
+                                    Accept Invitation
+                                </button>
+                            </div>
+                        `;
+                    } else if (notification.notificationType === 'ASSIGNMENT_CREATED') {
+                        actionBtn = `
+                            <div class="notification-actions">
+                                <button class="notification-action" onclick="viewAssignment(${notification.relatedId}, ${notification.id})">
+                                    View Assignment
+                                </button>
+                            </div>
+                        `;
+                    } else if (notification.notificationType === 'TEAM_INVITATION') {
+                        actionBtn = `
+                            <div class="notification-actions">
+                                <button class="notification-action" onclick="viewTeamInvitation(${notification.relatedId}, ${notification.id})">
+                                    View Invitation
+                                </button>
+                            </div>
+                        `;
+                    } else if (notification.notificationType === 'COURSE_CONTENT_ADDED') {
+                        actionBtn = `
+                            <div class="notification-actions">
+                                <button class="notification-action" onclick="viewContent(${notification.relatedId}, ${notification.id})">
+                                    View Content
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    return `
+                        <div class="notification-item ${notification.read ? '' : 'unread'}" data-id="${notification.id}">
+                            <div class="notification-content">${notification.message}</div>
+                            <div class="notification-time">${formattedDate}</div>
+                            ${actionBtn}
+                        </div>
+                    `;
+                }).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching notifications:', error);
+        });
+    }
+    
+    // Format relative time
+    function formatRelativeTime(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+        
+        if (diffSec < 60) {
+            return 'Just now';
+        } else if (diffMin < 60) {
+            return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+        } else if (diffHour < 24) {
+            return `${diffHour} hour${diffHour !== 1 ? 's' : ''} ago`;
+        } else if (diffDay < 7) {
+            return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+        } else {
+            return date.toLocaleDateString();
+        }
+    }
+    
+    // Accept course invitation
+    function acceptCourseInvitation(invitationId, notificationId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch(`/api/courses/invitations/${invitationId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Mark notification as read
+                markNotificationAsRead(notificationId);
+                
+                // Show success message
+                showToast('Course invitation accepted successfully');
+                
+                // Refresh page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                throw new Error('Failed to accept invitation');
+            }
+        })
+        .catch(error => {
+            console.error('Error accepting invitation:', error);
+            showToast('Error accepting invitation', 'error');
+        });
+    }
+    
+    // View assignment
+    function viewAssignment(assignmentId, notificationId) {
+        // Mark notification as read
+        markNotificationAsRead(notificationId);
+        
+        // Fetch assignment details to get the course ID
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch(`/api/assignments/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => response.json())
+        .then(assignment => {
+            // Redirect to the assignment page
+            window.location.href = `/student/course/${assignment.course.id}/assignment/${assignmentId}`;
+        })
+        .catch(error => {
+            console.error('Error fetching assignment details:', error);
+            // Fallback to assignments tab
+            window.location.href = '/dashboard/student?tab=assignments';
+        });
+    }
+    
+    // Mark notification as read
+    function markNotificationAsRead(notificationId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch(`/api/notifications/${notificationId}/read`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Update UI
+                const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (notificationItem) {
+                    notificationItem.classList.remove('unread');
+                }
+                
+                // Refresh notification count
+                updateNotificationCount();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking notification as read:', error);
+        });
+    }
+    
+    // Update notification count
+    function updateNotificationCount() {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch('/api/notifications/unread/count', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('notification-badge');
+            if (data.count > 0) {
+                badge.style.display = 'flex';
+                badge.textContent = data.count;
+            } else {
+                badge.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error updating notification count:', error);
+        });
+    }
+    
+    // View team invitation
+    function viewTeamInvitation(teamMembershipId, notificationId) {
+        // Mark notification as read
+        markNotificationAsRead(notificationId);
+        
+        // Redirect to the team invitations page
+        window.location.href = '/student/team-invitations';
+    }
+    
+    // View content
+    function viewContent(contentId, notificationId) {
+        // Mark notification as read
+        markNotificationAsRead(notificationId);
+        
+        // Fetch content details to get the course ID
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch(`/api/content/${contentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => response.json())
+        .then(content => {
+            // Redirect to the course page with content tab active
+            window.location.href = `/student/course/${content.course.id}?tab=content`;
+        })
+        .catch(error => {
+            console.error('Error fetching content details:', error);
+            // Fallback to dashboard if content details can't be fetched
+            window.location.href = '/dashboard/student';
+        });
+    }
+    
+    // Mark all notifications as read
+    function markAllNotificationsAsRead(event) {
+        event.stopPropagation(); // Prevent closing the dropdown
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        fetch('/api/notifications/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Update UI
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.classList.remove('unread');
+                });
+                
+                // Update badge
+                document.getElementById('notification-badge').style.display = 'none';
+                
+                // Show confirmation
+                showToast('All notifications marked as read');
+            }
+        })
+        .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+        });
+    }
+    
+    // Check for notifications on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNotificationCount();
+        
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success')) {
+            showToast('Operation completed successfully', 'success');
+        } else if (urlParams.has('error')) {
+            showToast(urlParams.get('message') || 'An error occurred', 'error');
+        }
+        
+        // Poll for new notifications every minute
+        setInterval(updateNotificationCount, 60000);
     });
 </script>
 

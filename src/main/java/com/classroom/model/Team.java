@@ -2,9 +2,12 @@ package com.classroom.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Entity
 @Getter
@@ -35,17 +38,63 @@ public class Team {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    private Date createdAt;
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Date updatedAt;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<TeamMembership> memberships = new HashSet<>();
+    @Builder.Default
+    private List<TeamMembership> memberships = new ArrayList<>();
 
-    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Submission> submissions = new HashSet<>();
+    @OneToOne(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Submission submission;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+    /**
+     * Add a student to this team
+     * @param student The student to add
+     * @param accepted Whether the membership is already accepted
+     * @return The created membership
+     */
+    public TeamMembership addMember(User student, boolean accepted) {
+        TeamMembership membership = new TeamMembership();
+        membership.setTeam(this);
+        membership.setStudent(student);
+        membership.setAccepted(accepted);
+        this.memberships.add(membership);
+        return membership;
+    }
+
+    /**
+     * Check if a student is a member of this team
+     * @param student The student to check
+     * @return true if the student is a member, false otherwise
+     */
+    public boolean hasMember(User student) {
+        return this.memberships.stream()
+                .anyMatch(m -> m.getStudent().equals(student) && m.isAccepted());
+    }
+
+    /**
+     * Get the pending membership for a student, if any
+     * @param student The student to check
+     * @return The pending membership or null if none exists
+     */
+    public TeamMembership getPendingMembership(User student) {
+        return this.memberships.stream()
+                .filter(m -> m.getStudent().equals(student) && !m.isAccepted())
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Remove a student from this team
+     * @param student The student to remove
+     */
+    public void removeMember(User student) {
+        this.memberships.removeIf(m -> m.getStudent().equals(student));
     }
 }

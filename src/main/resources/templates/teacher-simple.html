@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Classroom | Teacher Dashboard</title>
+    
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}" />
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .course-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teacher Dashboard</h1>
+    
+    <!-- Debug Info -->
+    <div>
+        <h4>Debug Info</h4>
+        <p>Courses count: <span th:text="${courses != null ? #lists.size(courses) : 0}">0</span></p>
+        <p>Archived courses count: <span th:text="${archivedCourses != null ? #lists.size(archivedCourses) : 0}">0</span></p>
+    </div>
+    
+    <!-- Active Courses -->
+    <h2>My Classes</h2>
+    <div>
+        <div th:each="course : ${courses}" class="course-card">
+            <h3 th:text="${course.name}">Course Name</h3>
+            <p th:text="${course.description}">Course Description</p>
+            <p>Code: <span th:text="${course.courseCode}">ABC123</span></p>
+        </div>
+        
+        <div th:if="${#lists.isEmpty(courses)}" class="empty-state">
+            <p>No Classes Created Yet</p>
+        </div>
+    </div>
+    
+    <!-- Archived Courses -->
+    <h2>Archived</h2>
+    <div>
+        <div th:each="course : ${archivedCourses}" class="course-card">
+            <h3 th:text="${course.name}">Course Name</h3>
+            <p th:text="${course.description}">Course Description</p>
+            <p>Code: <span th:text="${course.courseCode}">ABC123</span></p>
+        </div>
+        
+        <div th:if="${#lists.isEmpty(archivedCourses)}" class="empty-state">
+            <p>No Archived Classes</p>
+        </div>
+    </div>
+</body>
+</html> 

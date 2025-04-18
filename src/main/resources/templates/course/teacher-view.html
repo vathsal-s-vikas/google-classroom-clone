@@ -425,6 +425,68 @@
             cursor: pointer;
             margin-left: 10px;
         }
+        
+        /* Content item styles */
+        .content-item {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .content-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+        
+        .content-item-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .content-item-title i {
+            color: #3f51b5;
+            font-size: 1.2rem;
+        }
+        
+        .content-item-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .content-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .content-item-description {
+            margin-bottom: 1rem;
+            color: #555;
+        }
+        
+        .content-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .content-type-badge {
+            background-color: #e9ecef;
+            color: #6c757d;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
@@ -505,6 +567,7 @@
                             <span><i class="fas fa-calendar"></i> <span th:text="${'Due: ' + #temporals.format(assignment.deadline, 'MMM dd, yyyy')}">Due: May 15, 2023</span></span>
                             <span><i class="fas fa-award"></i> <span th:text="${assignment.maxMarks + ' points'}">100 points</span></span>
                             <span><i class="fas fa-users"></i> <span th:text="${assignment.assignmentType}">INDIVIDUAL</span></span>
+                            <span th:if="${assignment.assignmentType == 'GROUP'}"><i class="fas fa-user-friends"></i> <span th:text="${'Team Size: ' + assignment.teamSize}">Team Size: 4</span></span>
                         </div>
                         <div class="assignment-description" th:text="${assignment.description}" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
                             Assignment description goes here...
@@ -570,10 +633,13 @@
                 <i class="fas fa-plus"></i> Add Content
             </button>
             
-            <div class="empty-state">
-                <i class="fas fa-book"></i>
-                <h3>No Content Added</h3>
-                <p>Add study materials, links, or files for your students.</p>
+            <div id="content-items-container" style="margin-top: 1.5rem;">
+                <!-- Content items will be loaded here -->
+                <div class="empty-state" id="no-content-placeholder">
+                    <i class="fas fa-book"></i>
+                    <h3>No Content Added</h3>
+                    <p>Add study materials, links, or files for your students.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -582,64 +648,131 @@
 <!-- Modals -->
 <!-- Assignment Modal -->
 <div id="assignmentModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 700px;">
         <span class="close" onclick="closeModals()">&times;</span>
         <h2 id="assignmentModalTitle">Create New Assignment</h2>
         <form id="assignmentForm">
-            <input type="hidden" id="courseId" th:value="${course.id}">
             <input type="hidden" id="assignmentId" name="assignmentId" value="">
+            <input type="hidden" id="courseId" name="courseId" th:value="${course.id}">
+            
             <div class="form-group">
                 <label for="title">Title</label>
-                <input type="text" id="title" name="title" required>
+                <input type="text" id="title" name="title" placeholder="Assignment title" required>
             </div>
+            
             <div class="form-group">
                 <label for="description">Description</label>
-                <textarea id="description" name="description" rows="3"></textarea>
+                <textarea id="description" name="description" placeholder="Brief description of the assignment" rows="2"></textarea>
             </div>
+            
             <div class="form-group">
                 <label for="instructions">Instructions</label>
-                <textarea id="instructions" name="instructions" rows="3"></textarea>
+                <textarea id="instructions" name="instructions" placeholder="Detailed instructions for students" rows="3"></textarea>
             </div>
+            
             <div class="form-group">
-                <label for="assignmentType">Type</label>
-                <select id="assignmentType" name="assignmentType" required>
+                <label for="assignmentType">Assignment Type</label>
+                <select id="assignmentType" name="assignmentType" onchange="toggleTeamOptions()">
                     <option value="INDIVIDUAL">Individual</option>
                     <option value="GROUP">Group</option>
                 </select>
             </div>
+            
+            <div id="teamOptions" style="display: none; border: 1px solid #eee; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                <div class="form-group">
+                    <label for="teamSize">Maximum Team Size</label>
+                    <input type="number" id="teamSize" name="teamSize" min="2" max="8" value="4">
+                </div>
+                
+                <div class="form-group">
+                    <label for="minTeamSize">Minimum Team Size</label>
+                    <input type="number" id="minTeamSize" name="minTeamSize" min="2" max="6" value="2">
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="allowStudentsToCreateTeams" name="allowStudentsToCreateTeams" checked>
+                        <label for="allowStudentsToCreateTeams">Allow students to create teams</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="individualMarking" name="individualMarking">
+                        <label for="individualMarking">Enable individual marking for team members</label>
+                    </div>
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label for="maxMarks">Maximum Marks</label>
-                <input type="number" id="maxMarks" name="maxMarks" min="1" required>
+                <input type="number" id="maxMarks" name="maxMarks" min="1" max="100" value="100" required>
             </div>
+            
             <div class="form-group">
                 <label for="deadline">Deadline</label>
                 <input type="datetime-local" id="deadline" name="deadline" required>
             </div>
+            
             <div class="form-group">
-                <label>
+                <div class="checkbox-group">
                     <input type="checkbox" id="lateSubmissionAllowed" name="lateSubmissionAllowed">
-                    Allow Late Submissions
-                </label>
+                    <label for="lateSubmissionAllowed">Allow Late Submissions</label>
+                </div>
             </div>
-            <div id="lateSubmissionOptions" style="display: none;">
+            
+            <div id="lateSubmissionOptions" style="display: none; border: 1px solid #eee; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
                 <div class="form-group">
                     <label for="latePenaltyPercentage">Late Penalty (%)</label>
-                    <input type="number" id="latePenaltyPercentage" name="latePenaltyPercentage" min="0" max="100">
+                    <input type="number" id="latePenaltyPercentage" name="latePenaltyPercentage" min="0" max="100" value="10">
                 </div>
+                
                 <div class="form-group">
                     <label for="maxLateDays">Maximum Late Days</label>
-                    <input type="number" id="maxLateDays" name="maxLateDays" min="1">
+                    <input type="number" id="maxLateDays" name="maxLateDays" min="1" max="14" value="7">
                 </div>
             </div>
+            
             <div class="form-group">
-                <label for="attachments">Attachments</label>
-                <div id="attachment-container">
-                    <input type="file" id="attachment-file" multiple>
-                    <div id="file-list"></div>
+                <label for="attachment-file">Attachments</label>
+                <div id="file-upload-container">
+                    <label for="attachment-file" class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i> Choose Files
+                    </label>
+                    <input type="file" id="attachment-file" name="files" multiple style="display: none;" onchange="handleFileSelect()">
                 </div>
-                <small>Upload files that students will need for this assignment (e.g., templates, images, documents)</small>
+                <div id="file-list"></div>
             </div>
-            <button type="submit" class="btn btn-primary">Create Assignment</button>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableRubric" name="enableRubric" onchange="toggleRubricOptions()">
+                    <label for="enableRubric">Enable Rubric</label>
+                </div>
+            </div>
+            
+            <div id="rubricOptions" style="display: none; border: 1px solid #eee; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                <div id="rubricItems">
+                    <div class="rubric-item">
+                        <div class="form-group">
+                            <label>Criteria 1</label>
+                            <input type="text" name="rubricCriteria[]" placeholder="E.g., Code Quality" class="rubric-criteria">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Points</label>
+                            <input type="number" name="rubricPoints[]" min="1" max="100" value="25" class="rubric-points">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline" onclick="addRubricItem()" style="margin-top: 10px;">
+                    <i class="fas fa-plus"></i> Add Criteria
+                </button>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline" onclick="closeModals()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Assignment</button>
+            </div>
         </form>
     </div>
 </div>
@@ -671,37 +804,52 @@
 <div id="contentModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModals()">&times;</span>
-        <h2>Add Content</h2>
+        <h2>Add Course Content</h2>
         <form id="contentForm">
+            <input type="hidden" id="contentCourseId" th:value="${course.id}">
+            <input type="hidden" id="contentId" name="contentId" value="">
+            
             <div class="form-group">
                 <label for="contentTitle">Title</label>
                 <input type="text" id="contentTitle" name="contentTitle" required>
             </div>
+            
+            <div class="form-group">
+                <label for="contentType">Content Type</label>
+                <select id="contentType" name="contentType" required>
+                    <option value="DOCUMENT">Document</option>
+                    <option value="LINK">External Link</option>
+                    <option value="VIDEO">Video Link</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="contentLinkGroup">
+                <label for="contentLink">URL</label>
+                <input type="url" id="contentLink" name="contentLink" placeholder="https://example.com">
+            </div>
+            
             <div class="form-group">
                 <label for="contentDescription">Description</label>
                 <textarea id="contentDescription" name="contentDescription" rows="3"></textarea>
             </div>
-            <div class="form-group">
-                <label for="contentType">Type</label>
-                <select id="contentType" name="contentType" required>
-                    <option value="LINK">Link</option>
-                    <option value="FILE">File</option>
-                    <option value="TEXT">Text Content</option>
-                </select>
+            
+            <div class="form-group" id="contentFileGroup">
+                <label>Attachment (Optional)</label>
+                <div class="file-upload-container">
+                    <input type="file" id="contentFile" name="contentFile" style="display:none">
+                    <div class="file-upload-area" onclick="document.getElementById('contentFile').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click to upload a file</p>
+                    </div>
+                    <div id="content-file-list"></div>
+                </div>
             </div>
-            <div id="linkContent" class="form-group">
-                <label for="link">URL</label>
-                <input type="url" id="link" name="link">
+            
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-outline" onclick="closeModals()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Content</button>
             </div>
-            <div id="fileContent" class="form-group" style="display: none;">
-                <label for="file">File</label>
-                <input type="file" id="file" name="file">
-            </div>
-            <div id="textContent" class="form-group" style="display: none;">
-                <label for="textContent">Content</label>
-                <textarea id="textContentArea" name="textContent" rows="5"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Add Content</button>
         </form>
     </div>
 </div>
@@ -763,34 +911,76 @@
         }
     });
     
-    // Toggle late submission options
-    document.getElementById('lateSubmissionAllowed').addEventListener('change', function() {
-        const lateOptions = document.getElementById('lateSubmissionOptions');
-        lateOptions.style.display = this.checked ? 'block' : 'none';
-    });
-    
-    // Toggle content type options
-    document.getElementById('contentType').addEventListener('change', function() {
-        const linkContent = document.getElementById('linkContent');
-        const fileContent = document.getElementById('fileContent');
-        const textContent = document.getElementById('textContent');
+    // Toggle team options based on assignment type
+    function toggleTeamOptions() {
+        const assignmentType = document.getElementById('assignmentType').value;
+        const teamOptions = document.getElementById('teamOptions');
         
-        linkContent.style.display = 'none';
-        fileContent.style.display = 'none';
-        textContent.style.display = 'none';
-        
-        switch(this.value) {
-            case 'LINK':
-                linkContent.style.display = 'block';
-                break;
-            case 'FILE':
-                fileContent.style.display = 'block';
-                break;
-            case 'TEXT':
-                textContent.style.display = 'block';
-                break;
+        if (assignmentType === 'GROUP') {
+            teamOptions.style.display = 'block';
+        } else {
+            teamOptions.style.display = 'none';
         }
-    });
+    }
+    
+    // Toggle rubric options
+    function toggleRubricOptions() {
+        const enableRubric = document.getElementById('enableRubric').checked;
+        const rubricOptions = document.getElementById('rubricOptions');
+        
+        rubricOptions.style.display = enableRubric ? 'block' : 'none';
+    }
+    
+    // Add new rubric item
+    function addRubricItem() {
+        const rubricItems = document.getElementById('rubricItems');
+        const itemCount = rubricItems.querySelectorAll('.rubric-item').length + 1;
+        
+        const newItem = document.createElement('div');
+        newItem.className = 'rubric-item';
+        newItem.innerHTML = `
+            <div class="form-group">
+                <label>Criteria ${itemCount}</label>
+                <input type="text" name="rubricCriteria[]" placeholder="Enter criteria" class="rubric-criteria">
+            </div>
+            <div class="form-group">
+                <label>Max Points</label>
+                <input type="number" name="rubricPoints[]" min="1" max="100" value="25" class="rubric-points">
+            </div>
+            <button type="button" class="btn-icon" onclick="removeRubricItem(this)" style="margin-left: 10px;">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        rubricItems.appendChild(newItem);
+    }
+    
+    // Remove rubric item
+    function removeRubricItem(button) {
+        const item = button.closest('.rubric-item');
+        item.remove();
+    }
+    
+    // Handle file selection
+    function handleFileSelect() {
+        const fileInput = document.getElementById('attachment-file');
+        const fileList = document.getElementById('file-list');
+        
+        fileList.innerHTML = '';
+        
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const file = fileInput.files[i];
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            fileItem.innerHTML = `
+                <span>${file.name} (${formatFileSize(file.size)})</span>
+                <i class="fas fa-times file-remove" data-index="${i}" onclick="removeFile(${i})"></i>
+            `;
+            
+            fileList.appendChild(fileItem);
+        }
+    }
     
     // Copy invite code
     function copyInviteCode() {
@@ -951,37 +1141,6 @@
         }
     }
     
-    // Display selected files in the file list
-    document.getElementById('attachment-file').addEventListener('change', function(e) {
-        const fileList = document.getElementById('file-list');
-        fileList.innerHTML = '';
-        
-        const files = e.target.files;
-        const fileArray = Array.from(files);
-        
-        // Store files in a data attribute for later access
-        this.fileArray = fileArray;
-        
-        for (let i = 0; i < fileArray.length; i++) {
-            const file = fileArray[i];
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.innerHTML = `
-                <span>${file.name} (${formatFileSize(file.size)})</span>
-                <i class="fas fa-times file-remove" data-index="${i}"></i>
-            `;
-            fileList.appendChild(fileItem);
-        }
-        
-        // Add event listeners for remove buttons
-        document.querySelectorAll('.file-remove').forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                removeFile(index);
-            });
-        });
-    });
-    
     // Remove a file from the list
     function removeFile(index) {
         const fileInput = document.getElementById('attachment-file');
@@ -1000,18 +1159,10 @@
             fileItem.className = 'file-item';
             fileItem.innerHTML = `
                 <span>${file.name} (${formatFileSize(file.size)})</span>
-                <i class="fas fa-times file-remove" data-index="${i}"></i>
+                <i class="fas fa-times file-remove" data-index="${i}" onclick="removeFile(${i})"></i>
             `;
             fileList.appendChild(fileItem);
         }
-        
-        // Add event listeners for new remove buttons
-        document.querySelectorAll('.file-remove').forEach(button => {
-            button.addEventListener('click', function() {
-                const buttonIndex = parseInt(this.getAttribute('data-index'));
-                removeFile(buttonIndex);
-            });
-        });
     }
     
     // Format file size
@@ -1180,12 +1331,22 @@
                 if (!response.ok) {
                     throw new Error(`Error fetching submissions: ${response.status}`);
                 }
-                return response.json();
+                return response.text();
+            })
+            .then(text => {
+                console.log("Raw submissions response:", text.substring(0, 500) + (text.length > 500 ? '...' : ''));
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error("JSON parse error:", e, "Raw text snippet:", text.substring(0, 200));
+                    throw new Error("Failed to parse submissions data");
+                }
             })
             .then(submissions => {
+                console.log("Parsed submissions:", submissions);
                 const submissionsList = document.getElementById('submissions-list');
                 if (submissionsList) {
-                    if (submissions.length === 0) {
+                    if (!submissions || submissions.length === 0) {
                         submissionsList.innerHTML = '<div class="empty-state" style="padding: 1rem; text-align: center;"><i class="fas fa-inbox"></i><p>No submissions yet</p></div>';
                     } else {
                         submissionsList.innerHTML = `
@@ -1200,22 +1361,51 @@
                                 </thead>
                                 <tbody>
                                     ${submissions.map(submission => {
-                                        const submittedDate = new Date(submission.submittedAt);
-                                        const formatted = submittedDate.toLocaleDateString() + ' ' + 
-                                            submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                        // Debug individual submission structure
+                                        console.log(`Submission ${submission.id} details:`, 
+                                            {
+                                                id: submission.id,
+                                                hasStudent: submission.student !== undefined,
+                                                hasTeam: submission.team !== undefined,
+                                                submittedAt: submission.submittedAt,
+                                                isLate: submission.isLate,
+                                                daysLate: submission.daysLate,
+                                                isEvaluated: submission.isEvaluated
+                                            }
+                                        );
+                                        
+                                        // Check if submittedAt exists before creating date object
+                                        let formatted = 'Unknown';
+                                        if (submission.submittedAt) {
+                                            const submittedDate = new Date(submission.submittedAt);
+                                            formatted = submittedDate.toLocaleDateString() + ' ' + 
+                                                submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                        }
                                         
                                         let status = 'Submitted';
                                         if (submission.isLate) {
-                                            status = `Late (${submission.daysLate} days)`;
+                                            status = `Late (${submission.daysLate || 0} days)`;
                                         }
                                         if (submission.isEvaluated) {
                                             status += ' - Evaluated';
                                         }
                                         
+                                        // Safely extract student data
+                                        let studentName = 'Unknown';
+                                        try {
+                                            if (submission.student && typeof submission.student === 'object') {
+                                                studentName = submission.student.name || 'Unnamed Student';
+                                            } else if (submission.team) {
+                                                studentName = 'Team Submission';
+                                            }
+                                        } catch (err) {
+                                            console.error('Error extracting student name:', err);
+                                        }
+                                        
                                         return `
                                             <tr style="border-bottom: 1px solid #ddd;">
                                                 <td style="padding: 8px;">
-                                                    ${submission.student ? submission.student.name : 'Team Submission'}
+                                                    ${studentName}
                                                 </td>
                                                 <td style="padding: 8px;">${formatted}</td>
                                                 <td style="padding: 8px;">${status}</td>
@@ -1331,8 +1521,46 @@
     
     // Download attachment function
     function downloadAttachment(attachmentId, fileName) {
-        // Placeholder for download functionality
-        showToast('Download functionality not implemented yet');
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Show loading toast
+        showToast('Downloading file...', 'info');
+        
+        fetch(`/api/attachments/${attachmentId}/download`, {
+            method: 'GET',
+            headers: {
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to download attachment');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create a link and trigger download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName || 'download';
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Show success message
+            showToast('File downloaded successfully', 'success');
+        })
+        .catch(error => {
+            console.error('Error downloading attachment:', error);
+            showToast(error.message || 'Error downloading file', 'error');
+        });
     }
     
     // Function to view a specific submission
@@ -1340,6 +1568,8 @@
         // Get CSRF tokens
         const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
         const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        console.log("Viewing submission with ID:", submissionId);
         
         // Fetch submission details
         fetch(`/api/submissions/${submissionId}`, {
@@ -1349,50 +1579,59 @@
                 [header]: token
             }
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Error response: ${response.status}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(submission => {
             console.log("Submission details:", submission);
             
-            // Format date
-            const submittedDate = new Date(submission.submittedAt);
-            const formattedDate = submittedDate.toLocaleDateString() + ' at ' + 
-                submittedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Create a modal to display submission details
+            // Build modal HTML for student submission view with individual marking capability
             const modalHtml = `
-                <div class="modal" id="viewSubmissionModal">
-                    <div class="modal-content">
+                <div id="viewSubmissionModal" class="modal" style="display: block;">
+                    <div class="modal-content" style="max-width: 750px;">
                         <span class="close" onclick="document.getElementById('viewSubmissionModal').remove()">&times;</span>
-                        <h2>Submission from ${submission.student ? submission.student.name : 'Team'}</h2>
-                        <div style="margin: 1rem 0; color: #666;">
-                            <p>Submitted on: ${formattedDate}</p>
-                            <p>Status: ${submission.isLate ? `Late (${submission.daysLate} days)` : 'On time'}</p>
-                            <p>Evaluated: ${submission.isEvaluated ? 'Yes' : 'No'}</p>
+                        <h2>Student Submission</h2>
+                        
+                        <div class="submission-meta" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <strong>Submitted By:</strong> 
+                                <span>${submission.student ? submission.student.name : 'Team Submission'}</span>
+                            </div>
+                            <div>
+                                <strong>Submitted On:</strong> 
+                                <span>${new Date(submission.submittedAt).toLocaleString()}</span>
+                            </div>
+                            ${submission.isLate ? 
+                                `<div class="late-badge" style="background-color: #ff6b6b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">
+                                    Late (${submission.daysLate} days)
+                                </div>` : ''
+                            }
                         </div>
-                        <div class="form-group">
-                            <label>Submission Text</label>
-                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
-                                ${submission.submissionText || 'No text provided.'}
+                        
+                        ${submission.team ? 
+                            `<div class="team-info" style="margin-bottom: 1rem; padding: 0.8rem; background-color: #f8f9fa; border-radius: 4px;">
+                                <h3 style="margin-bottom: 0.5rem;">Team Members</h3>
+                                <div id="team-members-list">Loading team members...</div>
+                            </div>` : ''
+                        }
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3>Submission Notes</h3>
+                            <div style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9; min-height: 60px;">
+                                ${submission.notes || 'No notes provided'}
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Attachments</label>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3>Attached Files</h3>
                             <div id="submission-attachments" style="padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9;">
                                 Loading attachments...
                             </div>
                         </div>
-                        <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
                             <button class="btn btn-outline" onclick="document.getElementById('viewSubmissionModal').remove()">Close</button>
-                            ${!submission.isEvaluated ? 
-                                `<button class="btn btn-primary" onclick="evaluateSubmission('${submission.id}')">
-                                    <i class="fas fa-check"></i> Mark as Evaluated
-                                </button>` : ''
-                            }
+                            <button class="btn btn-primary" onclick="evaluateSubmission('${submission.id}')">
+                                Evaluate Submission
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1400,9 +1639,46 @@
             
             // Add modal to body
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            document.getElementById('viewSubmissionModal').style.display = 'block';
             
-            // Fetch attachments
+            // If it's a team submission, fetch team members
+            if (submission.team) {
+                fetch(`/api/teams/${submission.team.id}/members`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [header]: token
+                    }
+                })
+                .then(response => response.json())
+                .then(members => {
+                    const teamMembersList = document.getElementById('team-members-list');
+                    if (teamMembersList) {
+                        if (members.length === 0) {
+                            teamMembersList.innerHTML = 'No members found';
+                        } else {
+                            teamMembersList.innerHTML = `
+                                <ul style="list-style-type: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${members.map(member => `
+                                        <li style="background-color: #e9ecef; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.9rem;">
+                                            ${member.student.name}
+                                            ${member.leader ? ' <span style="color: #3f51b5; font-weight: bold;">(Team Leader)</span>' : ''}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching team members:', error);
+                    const teamMembersList = document.getElementById('team-members-list');
+                    if (teamMembersList) {
+                        teamMembersList.innerHTML = 'Failed to load team members';
+                    }
+                });
+            }
+            
+            // Fetch submission attachments
             fetch(`/api/submissions/${submissionId}/attachments`, {
                 method: 'GET',
                 headers: {
@@ -1414,13 +1690,13 @@
             .then(attachments => {
                 const attachmentList = document.getElementById('submission-attachments');
                 if (attachmentList) {
-                    if (attachments.length === 0) {
+                    if (!attachments || attachments.length === 0) {
                         attachmentList.innerHTML = 'No attachments';
                     } else {
                         attachmentList.innerHTML = attachments.map(attachment => `
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <span>${attachment.fileName} (${formatFileSize(attachment.fileSize)})</span>
-                                <button class="btn btn-outline" style="padding: 0.3rem 0.6rem;" onclick="downloadAttachment('${attachment.id}', '${attachment.fileName}')">
+                                <span>${attachment.fileName || 'Unnamed file'} (${formatFileSize(attachment.fileSize || 0)})</span>
+                                <button class="btn btn-outline" style="padding: 0.3rem 0.6rem;" onclick="downloadAttachment('${attachment.id}', '${attachment.fileName || 'file'}')">
                                     <i class="fas fa-download"></i>
                                 </button>
                             </div>
@@ -1432,7 +1708,7 @@
                 console.error('Error fetching attachments:', error);
                 const attachmentList = document.getElementById('submission-attachments');
                 if (attachmentList) {
-                    attachmentList.innerHTML = 'Failed to load attachments';
+                    attachmentList.innerHTML = 'Failed to load attachments: ' + error.message;
                 }
             });
         })
@@ -1442,47 +1718,333 @@
         });
     }
     
-    // Function to mark a submission as evaluated
+    // Function to evaluate a submission
     function evaluateSubmission(submissionId) {
+        // Get the course ID from the URL
+        const courseId = window.location.pathname.split('/').filter(part => part).pop();
+        
+        // Get the assignment ID from the active modal
+        const viewModal = document.getElementById('viewAssignmentModal');
+        let assignmentId;
+        
+        if (viewModal) {
+            const onClick = viewModal.querySelector('.btn-primary').getAttribute('onclick');
+            if (onClick) {
+                const match = onClick.match(/'([^']+)'/);
+                assignmentId = match ? match[1] : null;
+            }
+        }
+        
+        if (!assignmentId) {
+            showToast('Error: Could not determine assignment ID', 'error');
+            return;
+        }
+        
+        // Close the submission modal
+        const modal = document.getElementById('viewSubmissionModal');
+        if (modal) {
+            modal.remove();
+        }
+        
+        // Navigate to the detailed evaluation page
+        window.location.href = `/teacher/course/${courseId}/assignment/${assignmentId}/submission/${submissionId}`;
+    }
+
+    // Function to open content modal
+    function openContentModal() {
+        // Reset form
+        document.getElementById('contentForm').reset();
+        document.getElementById('contentId').value = '';
+        document.getElementById('content-file-list').innerHTML = '';
+        
+        // Show modal
+        document.getElementById('contentModal').style.display = 'block';
+    }
+
+    // Handle content form submission
+    document.getElementById('contentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get form data
+        const contentId = document.getElementById('contentId').value;
+        const courseId = document.getElementById('contentCourseId').value;
+        const title = document.getElementById('contentTitle').value;
+        const type = document.getElementById('contentType').value;
+        const link = document.getElementById('contentLink').value;
+        const description = document.getElementById('contentDescription').value;
+        const fileInput = document.getElementById('contentFile');
+        
+        // Create FormData object for file upload
+        const formData = new FormData();
+        formData.append('courseId', courseId);
+        formData.append('title', title);
+        formData.append('type', type);
+        formData.append('description', description);
+        
+        if (link) {
+            formData.append('link', link);
+        }
+        
+        if (contentId) {
+            formData.append('id', contentId);
+        }
+        
+        if (fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        }
+        
         // Get CSRF tokens
         const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
         const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
         
-        fetch(`/api/submissions/${submissionId}/evaluate`, {
-            method: 'POST',
+        // Save content
+        fetch('/api/content', {
+            method: contentId ? 'PUT' : 'POST',
+            headers: {
+                [header]: token
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.text().then(text => {
+                    throw new Error(text || 'Failed to save content');
+                });
+            }
+        })
+        .then(data => {
+            // Close modal
+            closeModals();
+            
+            // Show success message
+            showToast('Content saved successfully');
+            
+            // Refresh content list
+            loadCourseContent();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error saving content', 'error');
+        });
+    });
+
+    // Function to load course content
+    function loadCourseContent() {
+        const courseId = document.getElementById('courseId').value;
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Fetch content items
+        fetch(`/api/courses/${courseId}/content`, {
+            method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
                 [header]: token
             }
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error(`Error response: ${response.status}`);
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to load course content');
             }
-            return response.json();
         })
-        .then(data => {
-            showToast('Submission marked as evaluated');
+        .then(contentItems => {
+            const container = document.getElementById('content-items-container');
+            const placeholder = document.getElementById('no-content-placeholder');
             
-            // Close the submission modal
-            const modal = document.getElementById('viewSubmissionModal');
-            if (modal) {
-                modal.remove();
-            }
-            
-            // Refresh the assignment view to update the submissions list
-            const viewModal = document.getElementById('viewAssignmentModal');
-            if (viewModal) {
-                const assignmentId = viewModal.querySelector('.btn-primary').getAttribute('onclick').match(/'([^']+)'/)[1];
-                viewModal.remove();
-                viewAssignment(assignmentId);
+            if (contentItems.length === 0) {
+                // Show placeholder if no content
+                placeholder.style.display = 'block';
+                container.innerHTML = '';
+                container.appendChild(placeholder);
+            } else {
+                // Hide placeholder and show content items
+                placeholder.style.display = 'none';
+                
+                // Create HTML for content items
+                const contentHTML = contentItems.map(item => `
+                    <div class="content-item">
+                        <div class="content-item-header">
+                            <div class="content-item-title">
+                                <i class="fas ${getContentIcon(item.type)}"></i>
+                                <h3>${item.title}</h3>
+                            </div>
+                            <div class="content-item-actions">
+                                <button class="btn btn-outline btn-sm" onclick="editContent('${item.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline btn-sm" onclick="deleteContent('${item.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="content-item-description">${item.description || ''}</div>
+                        <div class="content-item-meta">
+                            ${item.link ? `<a href="${item.link}" target="_blank" class="btn btn-outline btn-sm">
+                                <i class="fas fa-external-link-alt"></i> Open Link
+                            </a>` : ''}
+                            ${item.fileId ? `<a href="/api/content/${item.id}/download" class="btn btn-outline btn-sm">
+                                <i class="fas fa-download"></i> Download
+                            </a>` : ''}
+                            <span class="content-type-badge">${item.type}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                container.innerHTML = contentHTML;
             }
         })
         .catch(error => {
-            console.error('Error evaluating submission:', error);
-            showToast(error.message || 'Error marking submission as evaluated', 'error');
+            console.error('Error:', error);
+            showToast(error.message || 'Error loading content', 'error');
         });
     }
+
+    // Helper function to get appropriate icon for content type
+    function getContentIcon(type) {
+        switch (type) {
+            case 'DOCUMENT':
+                return 'fa-file-alt';
+            case 'LINK':
+                return 'fa-link';
+            case 'VIDEO':
+                return 'fa-video';
+            default:
+                return 'fa-file';
+        }
+    }
+
+    // Function to edit content
+    function editContent(contentId) {
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Fetch content details
+        fetch(`/api/content/${contentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to load content details');
+            }
+        })
+        .then(content => {
+            // Populate form
+            document.getElementById('contentId').value = content.id;
+            document.getElementById('contentTitle').value = content.title;
+            document.getElementById('contentType').value = content.type;
+            document.getElementById('contentLink').value = content.link || '';
+            document.getElementById('contentDescription').value = content.description || '';
+            
+            // Show file info if exists
+            if (content.fileName) {
+                document.getElementById('content-file-list').innerHTML = `
+                    <div class="file-item">
+                        <span>${content.fileName}</span>
+                    </div>
+                `;
+            } else {
+                document.getElementById('content-file-list').innerHTML = '';
+            }
+            
+            // Show modal
+            document.getElementById('contentModal').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error loading content details', 'error');
+        });
+    }
+
+    // Function to delete content
+    function deleteContent(contentId) {
+        if (!confirm('Are you sure you want to delete this content item?')) {
+            return;
+        }
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Delete content
+        fetch(`/api/content/${contentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Show success message
+                showToast('Content deleted successfully');
+                
+                // Refresh content list
+                loadCourseContent();
+            } else {
+                throw new Error('Failed to delete content');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error deleting content', 'error');
+        });
+    }
+
+    // Add content file handling
+    document.getElementById('contentFile').addEventListener('change', function(e) {
+        const fileList = document.getElementById('content-file-list');
+        fileList.innerHTML = '';
+        
+        if (this.files.length > 0) {
+            const file = this.files[0];
+            const fileSize = formatFileSize(file.size);
+            
+            fileList.innerHTML = `
+                <div class="file-item">
+                    <span>${file.name} (${fileSize})</span>
+                    <button type="button" class="file-remove" onclick="removeContentFile()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }
+    });
+
+    // Function to remove content file
+    function removeContentFile() {
+        document.getElementById('contentFile').value = '';
+        document.getElementById('content-file-list').innerHTML = '';
+    }
+
+    // Format file size helper
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Initialize content list when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load content list
+        loadCourseContent();
+    });
 </script>
 
 </body>

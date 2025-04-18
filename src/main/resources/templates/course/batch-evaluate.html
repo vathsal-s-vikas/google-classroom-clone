@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Evaluation</title>
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}" />
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --warning-color: #FBBC05;
+            --danger-color: #EA4335;
+            --hover-color: #1557af;
+            --text-color: #3c4043;
+            --border-color: #dadce0;
+            --sidebar-bg: #f8f9fa;
+            --card-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --success-color: #34A853;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Google Sans', Arial, sans-serif;
+        }
+        
+        body {
+            color: var(--text-color);
+            background-color: #f1f3f4;
+            line-height: 1.6;
+        }
+        
+        /* Top Bar Styles */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: white;
+            padding: 0.8rem 1.5rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-text {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .course-name {
+            font-size: 1.1rem;
+            padding-left: 20px;
+            border-left: 1px solid var(--border-color);
+            margin-left: 10px;
+        }
+        
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Navigation Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 0.5rem;
+            color: #888;
+        }
+        
+        .breadcrumb-current {
+            color: #555;
+            font-weight: 500;
+        }
+        
+        /* Container Styles */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        /* Card Styles */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        /* Table Styles */
+        .submissions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .submissions-table th,
+        .submissions-table td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .submissions-table th {
+            font-weight: 500;
+            color: #5f6368;
+            background-color: #f8f9fa;
+        }
+        
+        .submissions-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .student-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-submitted {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+        
+        .status-late {
+            background-color: #fce8e6;
+            color: #d93025;
+        }
+        
+        .status-graded {
+            background-color: #e6f4ea;
+            color: #137333;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .score-input {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .feedback-input {
+            width: 100%;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        /* Button Styles */
+        .button {
+            display: inline-block;
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .button-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .button-outline {
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            background-color: transparent;
+        }
+        
+        .button-outline:hover {
+            background-color: rgba(26, 115, 232, 0.04);
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            color: #dadce0;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state-text {
+            font-size: 1.1rem;
+            color: #5f6368;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-subtext {
+            color: #80868b;
+            font-size: 0.9rem;
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #323232;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .toast.success {
+            background-color: var(--success-color);
+        }
+        
+        .toast.error {
+            background-color: var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="logo-section">
+            <a href="/dashboard/teacher" style="text-decoration: none; color: inherit;">
+                <div class="logo-text">Classroom</div>
+            </a>
+            <div class="course-name" th:text="${course.name}">Course Name</div>
+        </div>
+        <div class="avatar" th:text="${#strings.substring(currentUser.name,0,1)}">U</div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb">
+            <a href="/dashboard/teacher">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a th:href="@{/teacher/course/{courseId}(courseId=${course.id})}" th:text="${course.name}">Course Name</a>
+            <span class="breadcrumb-separator">/</span>
+            <a th:href="@{/teacher/course/{courseId}/assignment/{assignmentId}(courseId=${course.id}, assignmentId=${assignment.id})}" th:text="${assignment.title}">Assignment Title</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Batch Evaluation</span>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Batch Evaluation</h1>
+            </div>
+            
+            <div th:if="${submissions.isEmpty()}" class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h3 class="empty-state-text">No submissions to evaluate</h3>
+                <p class="empty-state-subtext">There are no submissions for this assignment yet.</p>
+            </div>
+            
+            <form th:unless="${submissions.isEmpty()}" th:action="@{/teacher/assignment/{assignmentId}/batch-evaluate(assignmentId=${assignment.id})}" method="post">
+                <table class="submissions-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                            <th>Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="submission : ${submissions}">
+                            <td>
+                                <div class="student-info">
+                                    <div class="student-avatar" th:if="${submission.student != null}" 
+                                         th:text="${#strings.substring(submission.student.name,0,1)}">S</div>
+                                    <div class="student-avatar" th:if="${submission.team != null}">
+                                        T<span th:text="${submission.team.id}">1</span>
+                                    </div>
+                                    <span th:if="${submission.student != null}" th:text="${submission.student.name}">Student Name</span>
+                                    <span th:if="${submission.team != null}" th:text="${'Team ' + submission.team.id}">Team 1</span>
+                                </div>
+                            </td>
+                            <td th:text="${#temporals.format(submission.submittedAt, 'MMM dd, yyyy, hh:mm a')}">May 14, 2023, 10:30 PM</td>
+                            <td>
+                                <span th:if="${submission.isEvaluated}" class="status-badge status-graded">Graded</span>
+                                <span th:unless="${submission.isEvaluated}" class="status-badge" 
+                                      th:classappend="${submission.isLate ? 'status-late' : 'status-submitted'}"
+                                      th:text="${submission.isLate ? 'Late' : 'Submitted'}">Submitted</span>
+                            </td>
+                            <td>
+                                <input type="number" th:name="'score_' + ${submission.id}" class="form-control score-input" 
+                                       min="0" th:max="${assignment.maxMarks}" 
+                                       th:value="${submission.mark != null ? submission.mark.rawMarks : ''}"
+                                       required>
+                                <span>/</span>
+                                <span th:text="${assignment.maxMarks}">100</span>
+                            </td>
+                            <td>
+                                <textarea th:name="'feedback_' + ${submission.id}" 
+                                          class="form-control feedback-input" 
+                                          th:text="${submission.mark != null ? submission.mark.feedback : ''}">
+                                </textarea>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="actions">
+                    <a th:href="@{/teacher/course/{courseId}/assignment/{assignmentId}(courseId=${course.id}, assignmentId=${assignment.id})}" class="button button-outline">Cancel</a>
+                    <button type="submit" class="button button-primary">Save All Evaluations</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Show toast notification
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast';
+            if (type) {
+                toast.classList.add(type);
+            }
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Add event listener to form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('success')) {
+                showToast('Evaluations saved successfully', 'success');
+            } else if (urlParams.has('error')) {
+                showToast(urlParams.get('message') || 'An error occurred', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 

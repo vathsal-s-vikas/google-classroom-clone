@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom - Virtual Learning Platform</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #4e6cef;
+            --primary-dark: #3a56d4;
+            --secondary: #39b982;
+            --secondary-dark: #2da06e;
+            --text-light: #f8f9fa;
+            --text-dark: #2d3748;
+            --background: #f4f6f9;
+            --white: #ffffff;
+            --black: #000000;
+            --gray-light: #f8f9fa;
+            --gray: #6c757d;
+            --section-bg-1: #f8faff;
+            --section-bg-2: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background-color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 0.6rem 1.3rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+            border: none;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .hero {
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://source.unsplash.com/random/1600x900/?classroom,education');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 0 10%;
+            color: var(--white);
+        }
+
+        .hero-content {
+            max-width: 700px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .section {
+            padding: 5rem 10%;
+        }
+
+        .section:nth-child(odd) {
+            background-color: var(--section-bg-1);
+        }
+
+        .section:nth-child(even) {
+            background-color: var(--section-bg-2);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background-color: var(--white);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            background-color: var(--primary);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon i {
+            color: var(--white);
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .how-it-works {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .step-reverse {
+            flex-direction: row-reverse;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-image {
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .step-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .step-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--primary);
+            opacity: 0.2;
+            position: absolute;
+            margin-top: -2rem;
+        }
+
+        .step h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .about-card {
+            background-color: var(--white);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .about-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .cta {
+            padding: 5rem 10%;
+            text-align: center;
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta p {
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+        }
+
+        .btn-white {
+            background-color: var(--white);
+            color: var(--primary);
+        }
+
+        .btn-white:hover {
+            background-color: var(--gray-light);
+        }
+
+        footer {
+            background-color: var(--text-dark);
+            padding: 3rem 10%;
+            color: var(--text-light);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-column h3 {
+            margin-bottom: 1.5rem;
+            color: var(--white);
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-column a {
+            color: var(--gray-light);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-column a:hover {
+            color: var(--white);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 992px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            .nav-links {
+                display: none;
+            }
+            .step {
+                flex-direction: column;
+            }
+            .step-reverse {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                padding: 0 5%;
+            }
+            .section, .cta, footer {
+                padding: 3rem 5%;
+            }
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="fas fa-graduation-cap"></i>
+            <span>Classroom</span>
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it Works</a>
+            <a href="#about">About</a>
+        </div>
+        <div class="nav-buttons">
+            <a href="/login" class="btn btn-outline">Log In</a>
+            <a href="/signup" class="btn btn-primary">Sign Up</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Empower Your Academic Journey</h1>
+            <p>A comprehensive classroom management system that bridges the gap between professors and students with intelligent assignment workflows, collaborative tools, and insightful analytics.</p>
+            <div class="nav-buttons">
+                <a href="/signup" class="btn btn-primary">Get Started</a>
+                <a href="#features" class="btn btn-outline">Explore Features</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="features">
+        <div class="section-title">
+            <h2>Core Capabilities</h2>
+            <p>Purpose-built tools that enhance the teaching and learning experience</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3>Comprehensive Assignment System</h3>
+                <p>Create structured assignments with flexible deadlines, file attachments, and detailed instructions. Support for both individual and team submissions.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Team Collaboration</h3>
+                <p>Students can form teams for group assignments with integrated team management tools, leadership roles, and unified submission capabilities.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Advanced Grading System</h3>
+                <p>Versatile evaluation tools with support for partial credit, late submission policies, and detailed feedback mechanisms for continuous improvement.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3>Content Management</h3>
+                <p>Organize course materials into structured modules with support for multiple file formats, embedded media, and controlled visibility settings.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h3>Role-Based Access Control</h3>
+                <p>Distinct interfaces and capabilities for students, teaching assistants, and professors with appropriate permissions for each role.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <h3>Notification System</h3>
+                <p>Automated alerts for assignment deadlines, grade postings, and course announcements to keep everyone informed and engaged.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="how-it-works">
+        <div class="section-title">
+            <h2>How It Works</h2>
+            <p>Our platform streamlines the academic workflow for all participants</p>
+        </div>
+        <div class="how-it-works">
+            <div class="step">
+                <div class="step-content">
+                    <div class="step-number">01</div>
+                    <h3>Course Creation & Enrollment</h3>
+                    <p>Professors create courses and generate unique invitation codes. Students join courses using these codes, establishing a secure, controlled academic environment. Teaching assistants can be designated to help manage larger classes.</p>
+                </div>
+                <div class="step-image">
+                    <img src="https://source.unsplash.com/random/600x400/?classroom,education" alt="Course Creation">
+                </div>
+            </div>
+            <div class="step step-reverse">
+                <div class="step-content">
+                    <div class="step-number">02</div>
+                    <h3>Assignment & Content Distribution</h3>
+                    <p>Instructors create structured assignments with clear requirements, deadlines, and supporting materials. Course content is organized into modules that can be revealed progressively or all at once, depending on pedagogical needs.</p>
+                </div>
+                <div class="step-image">
+                    <img src="https://source.unsplash.com/random/600x400/?assignment,homework" alt="Assignment Distribution">
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-content">
+                    <div class="step-number">03</div>
+                    <h3>Submission & Collaboration</h3>
+                    <p>Students submit work individually or in teams, with automatic tracking of submission times and late penalties. For group assignments, team leaders can manage membership and coordinate unified submissions.</p>
+                </div>
+                <div class="step-image">
+                    <img src="https://source.unsplash.com/random/600x400/?collaboration,teamwork" alt="Submission & Collaboration">
+                </div>
+            </div>
+            <div class="step step-reverse">
+                <div class="step-content">
+                    <div class="step-number">04</div>
+                    <h3>Evaluation & Feedback</h3>
+                    <p>Instructors review submissions, provide detailed feedback, and assign grades according to rubrics. Students receive notifications when evaluations are complete and can review their performance and instructor comments.</p>
+                </div>
+                <div class="step-image">
+                    <img src="https://source.unsplash.com/random/600x400/?evaluation,feedback" alt="Evaluation & Feedback">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="about">
+        <div class="section-title">
+            <h2>About Our Platform</h2>
+            <p>Designed with educational principles and modern technology</p>
+        </div>
+        <div class="about-grid">
+            <div class="about-card">
+                <h3>Our Mission</h3>
+                <p>To create a comprehensive learning management system that facilitates meaningful educational experiences through intuitive design, flexible workflows, and powerful collaboration tools.</p>
+            </div>
+            <div class="about-card">
+                <h3>Technical Foundation</h3>
+                <p>Built on Spring Boot with a secure authentication system, responsive front-end, and robust database architecture. Designed to scale from small classrooms to large institutions.</p>
+            </div>
+            <div class="about-card">
+                <h3>Development Context</h3>
+                <p>This platform was developed as part of an Object-Oriented Analysis and Design course project, applying software engineering principles to real-world educational needs.</p>
+            </div>
+            <div class="about-card">
+                <h3>Educational Philosophy</h3>
+                <p>Our design emphasizes pedagogical flexibility, clear communication, and meaningful assessment to support diverse teaching approaches and learning styles.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>Ready to Transform Your Educational Experience?</h2>
+        <p>Built with modern technology and educational best practices, our platform offers a complete solution for remote and hybrid learning environments.</p>
+        <div class="cta-buttons">
+            <a href="/signup" class="btn btn-secondary">Create an Account</a>
+            <a href="/login" class="btn btn-white">Sign In</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>Classroom LMS</h3>
+                <p>A learning management system designed for academic institutions, built as part of the Object-Oriented Analysis and Design course.</p>
+            </div>
+            <div class="footer-column">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">API Reference</a></li>
+                    <li><a href="#">User Guide</a></li>
+                    <li><a href="#">System Requirements</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#">Technical Support</a></li>
+                    <li><a href="#">Knowledge Base</a></li>
+                    <li><a href="#">Troubleshooting</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>Legal</h3>
+                <ul>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Data Usage</a></li>
+                    <li><a href="#">Accessibility</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Classroom LMS. Academic Project.</p>
+        </div>
+    </footer>
+</body>
+</html> 

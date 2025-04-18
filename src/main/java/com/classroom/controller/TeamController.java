@@ -1,0 +1,357 @@
+package com.classroom.controller;
+
+import com.classroom.model.*;
+import com.classroom.service.AssignmentService;
+import com.classroom.service.TeamService;
+import com.classroom.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/teams")
+public class TeamController {
+
+    @Autowired
+    private TeamService teamService;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private UserService userService;
+
+    private User getCurrentUser(OAuth2User principal) {
+        String email = principal.getAttribute("email");
+        return userService.getUserByEmail(email);
+    }
+
+    /**
+     * Get all teams for an assignment
+     */
+    @GetMapping("/assignment/{assignmentId}")
+    public ResponseEntity<List<Team>> getTeamsByAssignment(
+            @PathVariable Long assignmentId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+        
+        // Verify the assignment is a group assignment
+        if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP || assignment.getGroupAssignment() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        GroupAssignment groupAssignment = assignment.getGroupAssignment();
+        List<Team> teams = teamService.getTeamsByAssignment(groupAssignment);
+        return ResponseEntity.ok(teams);
+    }
+
+    /**
+     * Get a specific team by ID
+     */
+    @GetMapping("/{teamId}")
+    public ResponseEntity<Team> getTeamById(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        Team team = teamService.getTeamById(teamId);
+        return ResponseEntity.ok(team);
+    }
+
+    /**
+     * Get team members for a specific team
+     */
+    @GetMapping("/{teamId}/members")
+    public ResponseEntity<List<TeamMembership>> getTeamMembers(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        List<TeamMembership> members = teamService.getTeamMemberships(teamId);
+        return ResponseEntity.ok(members);
+    }
+
+    /**
+     * Create a new team
+     */
+    @PostMapping("/assignment/{assignmentId}")
+    public ResponseEntity<Team> createTeam(
+            @PathVariable Long assignmentId,
+            @RequestBody Map<String, String> teamData,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+        
+        // Verify the assignment is a group assignment
+        if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP || assignment.getGroupAssignment() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        GroupAssignment groupAssignment = assignment.getGroupAssignment();
+        String teamName = teamData.get("name");
+        String projectTitle = teamData.get("projectTitle");
+        
+        if (teamName == null || teamName.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        try {
+            Team team = teamService.createTeam(groupAssignment, teamName, projectTitle, currentUser);
+            return new ResponseEntity<>(team, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Update team details
+     */
+    @PutMapping("/{teamId}")
+    public ResponseEntity<Team> updateTeam(
+            @PathVariable Long teamId,
+            @RequestBody Map<String, String> teamData,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            // Verify user is a leader of this team
+            Team team = teamService.getTeamById(teamId);
+            List<TeamMembership> memberships = teamService.getTeamMemberships(teamId);
+            boolean isLeader = memberships.stream()
+                .anyMatch(m -> m.getStudent().getId().equals(currentUser.getId()) && m.isLeader());
+            
+            if (!isLeader) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            String teamName = teamData.get("name");
+            String projectTitle = teamData.get("projectTitle");
+            
+            Team updatedTeam = teamService.updateTeam(teamId, teamName, projectTitle);
+            return ResponseEntity.ok(updatedTeam);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Delete a team
+     */
+    @DeleteMapping("/{teamId}")
+    public ResponseEntity<Void> deleteTeam(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            // Verify user is a leader of this team
+            Team team = teamService.getTeamById(teamId);
+            List<TeamMembership> memberships = teamService.getTeamMemberships(teamId);
+            boolean isLeader = memberships.stream()
+                .anyMatch(m -> m.getStudent().getId().equals(currentUser.getId()) && m.isLeader());
+            
+            if (!isLeader) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            teamService.deleteTeam(teamId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Invite a student to join a team
+     */
+    @PostMapping("/{teamId}/invite/{studentId}")
+    public ResponseEntity<TeamMembership> inviteStudentToTeam(
+            @PathVariable Long teamId,
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            // Verify user is a leader of this team
+            Team team = teamService.getTeamById(teamId);
+            List<TeamMembership> memberships = teamService.getTeamMemberships(teamId);
+            boolean isLeader = memberships.stream()
+                .anyMatch(m -> m.getStudent().getId().equals(currentUser.getId()) && m.isLeader());
+            
+            if (!isLeader) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            TeamMembership membership = teamService.inviteStudentToTeam(teamId, studentId);
+            return new ResponseEntity<>(membership, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Accept a team invitation
+     */
+    @PostMapping("/memberships/{membershipId}/accept")
+    public ResponseEntity<TeamMembership> acceptTeamInvitation(
+            @PathVariable Long membershipId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            TeamMembership membership = teamService.acceptTeamInvitation(membershipId);
+            
+            // Verify the invitation belongs to the current user
+            if (!membership.getStudent().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            return ResponseEntity.ok(membership);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Reject a team invitation
+     */
+    @PostMapping("/memberships/{membershipId}/reject")
+    public ResponseEntity<Void> rejectTeamInvitation(
+            @PathVariable Long membershipId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            // Get the membership directly from the repository
+            TeamMembership membership = teamService.getMembershipById(membershipId)
+                .orElseThrow(() -> new IllegalArgumentException("Membership not found"));
+            
+            if (!membership.getStudent().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            teamService.rejectTeamInvitation(membershipId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Remove a student from a team
+     */
+    @DeleteMapping("/{teamId}/members/{studentId}")
+    public ResponseEntity<Void> removeStudentFromTeam(
+            @PathVariable Long teamId,
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            // Verify user is a leader of this team or removing themselves
+            boolean isLeaderOrSelf = studentId.equals(currentUser.getId());
+            
+            if (!isLeaderOrSelf) {
+                List<TeamMembership> memberships = teamService.getTeamMemberships(teamId);
+                isLeaderOrSelf = memberships.stream()
+                    .anyMatch(m -> m.getStudent().getId().equals(currentUser.getId()) && m.isLeader());
+            }
+            
+            if (!isLeaderOrSelf) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            teamService.removeStudentFromTeam(teamId, studentId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Assign a student as a team leader
+     */
+    @PostMapping("/{teamId}/leaders/{studentId}")
+    public ResponseEntity<TeamMembership> assignTeamLeader(
+            @PathVariable Long teamId,
+            @PathVariable Long studentId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        
+        try {
+            // Verify user is a leader of this team
+            List<TeamMembership> memberships = teamService.getTeamMemberships(teamId);
+            boolean isLeader = memberships.stream()
+                .anyMatch(m -> m.getStudent().getId().equals(currentUser.getId()) && m.isLeader());
+            
+            if (!isLeader) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            TeamMembership membership = teamService.assignTeamLeader(teamId, studentId);
+            return ResponseEntity.ok(membership);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Get pending team invitations for the current user
+     */
+    @GetMapping("/invitations")
+    public ResponseEntity<List<Map<String, Object>>> getPendingInvitations(
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        List<TeamMembership> pendingInvitations = teamService.getPendingInvitationsForStudent(currentUser);
+        
+        List<Map<String, Object>> invitationsWithDetails = pendingInvitations.stream()
+            .map(membership -> {
+                Map<String, Object> details = new HashMap<>();
+                details.put("membershipId", membership.getId());
+                details.put("team", membership.getTeam());
+                details.put("assignment", membership.getTeam().getAssignment());
+                details.put("course", membership.getTeam().getAssignment().getAssignment().getCourse());
+                return details;
+            })
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(invitationsWithDetails);
+    }
+
+    /**
+     * Get the current user's team for a specific assignment
+     */
+    @GetMapping("/my-team/assignment/{assignmentId}")
+    public ResponseEntity<Team> getMyTeamForAssignment(
+            @PathVariable Long assignmentId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        User currentUser = getCurrentUser(principal);
+        Team team = teamService.getTeamForStudentAndAssignment(currentUser, assignmentId);
+        
+        if (team == null) {
+            return ResponseEntity.noContent().build();
+        }
+        
+        return ResponseEntity.ok(team);
+    }
+} 

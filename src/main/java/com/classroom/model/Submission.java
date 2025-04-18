@@ -47,6 +47,7 @@ public class Submission {
     private boolean isEvaluated;
 
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private Set<SubmissionAttachment> attachments = new HashSet<>();
 
     @OneToOne(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -131,6 +132,22 @@ public class Submission {
 
     public void setAttachments(Set<SubmissionAttachment> attachments) {
         this.attachments = attachments;
+    }
+
+    public Mark getMark() {
+        return mark;
+    }
+
+    public void setMark(Mark mark) {
+        this.mark = mark;
+    }
+
+    /**
+     * Convenience method to get the user associated with this submission
+     * Returns the student for individual submissions
+     */
+    public User getUser() {
+        return student;
     }
 
     @PrePersist

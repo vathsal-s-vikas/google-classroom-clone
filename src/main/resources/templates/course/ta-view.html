@@ -452,7 +452,7 @@
 
 <div class="topbar">
     <div class="left">
-        <a href="/dashboard/ta" class="back-button">
+        <a href="/ta-dashboard" class="back-button">
             <i class="fas fa-arrow-left"></i>&nbsp; Back to Dashboard
         </a>
     </div>
@@ -585,11 +585,80 @@
     <!-- Grading Tab -->
     <div class="tab-content" id="grading">
         <div class="card">
-            <h2>Pending Submissions</h2>
-            <div class="empty-state">
-                <i class="fas fa-clipboard-check"></i>
-                <h3>No Pending Submissions</h3>
-                <p>When students submit assignments, they will appear here for grading.</p>
+            <div class="card-header">
+                <div class="card-title">Assignments</div>
+            </div>
+            <div class="card-body">
+                <table class="table" th:if="${!assignments.empty}">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Due Date</th>
+                            <th>Max Marks</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="assignment : ${assignments}">
+                            <td th:text="${assignment.title}">Assignment Title</td>
+                            <td th:text="${#temporals.format(assignment.deadline, 'MMM d, yyyy, h:mm a')}">Due: May 15, 2023</td>
+                            <td th:text="${assignment.maxMarks}">Max Marks: 100</td>
+                            <td th:text="${assignment.assignmentType}">Type: INDIVIDUAL</td>
+                            <td>
+                                <a th:href="@{'/ta-view/course/' + ${course.id}}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="empty-state" th:if="${assignments.empty}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No assignments available for this course.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Submissions Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Pending Submissions</div>
+            </div>
+            <div class="card-body">
+                <table class="table" th:if="${!pendingSubmissions.empty}">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Assignment</th>
+                            <th>Submitted On</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="submission : ${pendingSubmissions}">
+                            <td th:text="${submission.student.firstName + ' ' + submission.student.lastName}">John Doe</td>
+                            <td th:text="${submission.assignment.title}">Assignment Title</td>
+                            <td th:text="${#temporals.format(submission.submittedAt, 'MMM d, yyyy, h:mm a')}">Oct 15, 2023</td>
+                            <td>
+                                <span class="badge" th:classappend="${submission.submittedAt.isAfter(submission.assignment.deadline) ? 'badge-late' : 'badge-submitted'}"
+                                      th:text="${submission.submittedAt.isAfter(submission.assignment.deadline) ? 'Late' : 'Submitted'}">
+                                    Submitted
+                                </span>
+                            </td>
+                            <td>
+                                <a th:href="@{'/ta-view/submission/' + ${submission.id} + '/evaluate'}" class="btn btn-primary">
+                                    <i class="fas fa-clipboard-check"></i> Evaluate
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="empty-state" th:if="${pendingSubmissions.empty}">
+                    <i class="fas fa-clipboard-check"></i>
+                    <p>No pending submissions for this course.</p>
+                </div>
             </div>
         </div>
     </div>

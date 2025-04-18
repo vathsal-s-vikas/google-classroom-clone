@@ -70,6 +70,16 @@ public class Assignment {
     @JsonIgnore
     private Set<AssignmentAttachment> attachments = new HashSet<>();
     
+    // Transient fields for view layer
+    @Transient
+    private boolean submitted;
+    
+    @Transient
+    private boolean evaluated;
+    
+    @Transient
+    private LocalDateTime submissionDate;
+    
     // Manual getter and setter for course field
     public Course getCourse() {
         return course;
@@ -77,6 +87,31 @@ public class Assignment {
     
     public void setCourse(Course course) {
         this.course = course;
+    }
+    
+    // Manual getters and setters for transient fields
+    public boolean isSubmitted() {
+        return submitted;
+    }
+    
+    public void setSubmitted(boolean submitted) {
+        this.submitted = submitted;
+    }
+    
+    public boolean isEvaluated() {
+        return evaluated;
+    }
+    
+    public void setEvaluated(boolean evaluated) {
+        this.evaluated = evaluated;
+    }
+    
+    public LocalDateTime getSubmissionDate() {
+        return submissionDate;
+    }
+    
+    public void setSubmissionDate(LocalDateTime submissionDate) {
+        this.submissionDate = submissionDate;
     }
 
     @PrePersist

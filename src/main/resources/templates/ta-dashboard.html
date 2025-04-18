@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom | TA Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #1967d2;
+            --primary-light: #e8f0fe;
+            --border-color: #dadce0;
+            --success-color: #0f9d58;
+            --warning-color: #f9ab00;
+            --danger-color: #ea4335;
+            --text-primary: #3c4043;
+            --text-secondary: #5f6368;
+        }
+        
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            color: var(--text-primary);
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .top-bar {
+            display: flex;
+            align-items: center;
+            height: 64px;
+            padding: 0 24px;
+            background-color: white;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .logo i {
+            margin-right: 8px;
+            font-size: 24px;
+        }
+        
+        .user-menu {
+            margin-left: auto;
+            position: relative;
+        }
+        
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #dadce0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .avatar-dropdown {
+            position: absolute;
+            top: 46px;
+            right: 0;
+            width: 280px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            display: none;
+            z-index: 1001;
+        }
+        
+        .avatar-dropdown.show {
+            display: block;
+        }
+        
+        .main-content {
+            margin-top: 64px;
+            padding: 24px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .dashboard-header {
+            margin-bottom: 24px;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 24px;
+            margin: 0 0 8px 0;
+        }
+        
+        .dashboard-header p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+        }
+        
+        .stat-card h3 {
+            font-size: 28px;
+            margin: 0 0 8px 0;
+            color: var(--primary-color);
+        }
+        
+        .stat-card p {
+            margin: 0;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-card p i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .course-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .course-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .course-card:hover {
+            box-shadow: 0 4px 8px rgba(60, 64, 67, 0.2);
+        }
+        
+        .course-banner {
+            height: 96px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+        
+        .course-banner h3 {
+            color: white;
+            margin: 0;
+            font-size: 22px;
+            font-weight: 500;
+        }
+        
+        .course-content {
+            padding: 16px;
+        }
+        
+        .course-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0 0 16px 0;
+        }
+        
+        .course-stats {
+            display: flex;
+            margin-bottom: 16px;
+        }
+        
+        .course-stat {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .course-stat h4 {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .course-stat p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .course-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn-course {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn-course:hover {
+            background-color: #d3e3fd;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h2 {
+            font-size: 20px;
+            margin: 0;
+        }
+        
+        .recent-activity {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            padding: 20px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            margin-right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .activity-icon.assignment {
+            background-color: var(--primary-color);
+        }
+        
+        .activity-icon.submission {
+            background-color: var(--success-color);
+        }
+        
+        .activity-icon.evaluation {
+            background-color: var(--warning-color);
+        }
+        
+        .activity-details {
+            flex-grow: 1;
+        }
+        
+        .activity-title {
+            font-weight: 500;
+            margin: 0 0 4px 0;
+        }
+        
+        .activity-meta {
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .activity-meta .separator {
+            margin: 0 8px;
+        }
+        
+        .activity-time {
+            margin-left: auto;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #dadce0;
+        }
+        
+        .empty-state p {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .pending-evaluations {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            margin-top: 24px;
+            overflow: hidden;
+        }
+        
+        .pending-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .pending-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .submission-list {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        
+        .submission-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s ease;
+        }
+        
+        .submission-item:last-child {
+            border-bottom: none;
+        }
+        
+        .submission-item:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .submission-course {
+            width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .submission-assignment {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+        
+        .submission-student {
+            width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .submission-time {
+            width: 150px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: right;
+        }
+        
+        .submission-actions {
+            width: 100px;
+            text-align: right;
+        }
+        
+        .btn-evaluate {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn-evaluate:hover {
+            background-color: #1a5cbf;
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .course-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .submission-student,
+            .submission-time {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a href="/ta-view/dashboard" class="logo">
+            <i class="bi bi-mortarboard"></i>
+            Classroom
+        </a>
+        <div class="user-menu">
+            <div class="avatar" onclick="toggleUserDropdown()">
+                <i class="bi bi-person"></i>
+            </div>
+            <div class="avatar-dropdown">
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 500;" th:text="${currentUser.name}">User Name</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);" th:text="${currentUser.email}">user@example.com</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <a href="/ta-view/dashboard" style="text-decoration: none; color: inherit; padding: 8px; border-radius: 4px; transition: background-color 0.3s;">
+                        <i class="bi bi-speedometer2" style="margin-right: 8px;"></i> Dashboard
+                    </a>
+                    <a href="/logout" style="text-decoration: none; color: inherit; padding: 8px; border-radius: 4px; transition: background-color 0.3s;">
+                        <i class="bi bi-box-arrow-right" style="margin-right: 8px;"></i> Sign out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h1>TA Dashboard</h1>
+            <p>Welcome back, <span th:text="${currentUser.name}">User</span>!</p>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3 th:text="${totalCourses}">0</h3>
+                <p><i class="bi bi-book"></i> Courses</p>
+            </div>
+            <div class="stat-card">
+                <h3 th:text="${totalAssignments}">0</h3>
+                <p><i class="bi bi-clipboard-check"></i> Assignments</p>
+            </div>
+            <div class="stat-card">
+                <h3 th:text="${pendingEvaluations}">0</h3>
+                <p><i class="bi bi-hourglass-split"></i> Pending Evaluations</p>
+            </div>
+            <div class="stat-card">
+                <h3 th:text="${recentActivity}">0</h3>
+                <p><i class="bi bi-activity"></i> Recent Activities</p>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Your Courses</h2>
+        </div>
+
+        <div th:if="${courses.isEmpty()}" class="empty-state">
+            <i class="bi bi-book"></i>
+            <p>You're not a TA in any courses yet</p>
+        </div>
+
+        <div th:unless="${courses.isEmpty()}" class="course-list">
+            <div class="course-card" th:each="course : ${courses}">
+                <div class="course-banner">
+                    <h3 th:text="${course.name}">Course Title</h3>
+                </div>
+                <div class="course-content">
+                    <p class="course-subtitle" th:text="${course.description}">Course Description</p>
+                    <div class="course-stats">
+                        <div class="course-stat">
+                            <h4 th:text="${courseStats.get(course.id).assignmentCount}">0</h4>
+                            <p>Assignments</p>
+                        </div>
+                        <div class="course-stat">
+                            <h4 th:text="${courseStats.get(course.id).studentCount}">0</h4>
+                            <p>Students</p>
+                        </div>
+                        <div class="course-stat">
+                            <h4 th:text="${courseStats.get(course.id).pendingCount}">0</h4>
+                            <p>Pending</p>
+                        </div>
+                    </div>
+                    <div class="course-actions">
+                        <button class="view-course-btn" th:onclick="'window.location.href=\'/ta-view/course/' + ${course.id} + '\''">View Course</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Pending Evaluations</h2>
+        </div>
+
+        <div th:if="${pendingSubmissions.isEmpty()}" class="empty-state">
+            <i class="bi bi-check-circle"></i>
+            <p>No pending submissions to evaluate</p>
+        </div>
+
+        <div th:unless="${pendingSubmissions.isEmpty()}" class="pending-evaluations">
+            <div class="pending-header">
+                <h3>Recent Submissions</h3>
+            </div>
+            <ul class="submission-list">
+                <li th:each="submission : ${pendingSubmissions}" class="submission-item">
+                    <div class="submission-course" th:text="${submission.assignment.course.name}">Course Name</div>
+                    <div class="submission-assignment" th:text="${submission.assignment.title}">Assignment Title</div>
+                    <div class="submission-student" th:text="${submission.student.name}">Student Name</div>
+                    <div class="submission-time" th:text="${#temporals.format(submission.submittedAt, 'MMM d, yyyy')}">Oct 15, 2023</div>
+                    <div class="submission-actions">
+                        <a th:href="@{/ta-view/submission/{submissionId}/evaluate(submissionId=${submission.id})}" class="btn-evaluate">Evaluate</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section-header" style="margin-top: 24px;">
+            <h2>Recent Activity</h2>
+        </div>
+
+        <div th:if="${activities.isEmpty()}" class="empty-state">
+            <i class="bi bi-activity"></i>
+            <p>No recent activity</p>
+        </div>
+
+        <div th:unless="${activities.isEmpty()}" class="recent-activity">
+            <div th:each="activity : ${activities}" class="activity-item">
+                <div th:class="'activity-icon ' + ${activity.type.toLowerCase()}">
+                    <i th:class="${activity.type == 'ASSIGNMENT' ? 'bi bi-clipboard-check' : 
+                                 activity.type == 'SUBMISSION' ? 'bi bi-upload' : 
+                                 activity.type == 'EVALUATION' ? 'bi bi-check-circle' : 'bi bi-info-circle'}"></i>
+                </div>
+                <div class="activity-details">
+                    <div class="activity-title" th:text="${activity.title}">Activity Title</div>
+                    <div class="activity-meta">
+                        <span th:text="${activity.course}">Course Name</span>
+                        <span class="separator">•</span>
+                        <span th:text="${activity.user}">User Name</span>
+                    </div>
+                </div>
+                <div class="activity-time" th:text="${activity.timeAgo}">2 hours ago</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleUserDropdown() {
+            const dropdown = document.querySelector('.avatar-dropdown');
+            dropdown.classList.toggle('show');
+            
+            // Add click outside listener
+            if (dropdown.classList.contains('show')) {
+                setTimeout(() => {
+                    document.addEventListener('click', function closeDropdown(e) {
+                        if (!dropdown.contains(e.target) && !e.target.closest('.avatar')) {
+                            dropdown.classList.remove('show');
+                            document.removeEventListener('click', closeDropdown);
+                        }
+                    });
+                }, 0);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Any initialization code can go here
+        });
+    </script>
+</body>
+</html> 

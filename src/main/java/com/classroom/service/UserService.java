@@ -50,4 +50,24 @@ public class UserService implements UserDetailsService {
             repository.save(newUser);
         }
     }
+    
+    /**
+     * Get a user by their ID
+     * @param id The user ID
+     * @return The user or throws an exception if not found
+     */
+    public User getUserById(Long id) {
+        return repository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + id));
+    }
+    
+    /**
+     * Get a user by their email
+     * @param email The user's email
+     * @return The user or throws an exception if not found
+     */
+    public User getUserByEmail(String email) {
+        return repository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+    }
 }

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TA Course View</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #4285f4;
+            --accent-color: #fbbc05;
+            --danger-color: #ea4335;
+            --success-color: #34a853;
+            --text-color: #3c4043;
+            --light-text: #5f6368;
+            --border-color: #dadce0;
+            --bg-color: #f8f9fa;
+            --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Top Bar Styles */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background-color: white;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+        }
+
+        .top-bar .logo {
+            display: flex;
+            align-items: center;
+            font-size: 22px;
+            color: var(--text-color);
+            text-decoration: none;
+            margin-right: 32px;
+        }
+
+        .top-bar .logo i {
+            margin-right: 12px;
+            color: var(--primary-color);
+        }
+
+        .greeting {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+
+        .greeting span {
+            margin-right: 16px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 256px;
+            background-color: white;
+            border-right: 1px solid var(--border-color);
+            padding-top: 64px;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+            background-color: #e8f0fe;
+        }
+
+        .nav-item i {
+            margin-right: 16px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .content {
+            flex: 1;
+            padding: 84px 32px 32px 288px;
+        }
+
+        .course-header {
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .course-header h1 {
+            font-size: 28px;
+            color: var(--text-color);
+        }
+
+        .course-info {
+            color: var(--light-text);
+            margin-top: 8px;
+        }
+
+        .course-code {
+            font-weight: 500;
+            margin-right: 12px;
+        }
+
+        /* Tabs Styles */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--light-text);
+            position: relative;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+
+        /* Card Styles */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Table Styles */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th, .table td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            font-weight: 500;
+            color: var(--light-text);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            border: none;
+            outline: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            background-color: transparent;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-pending {
+            background-color: #fef6e0;
+            color: #f9ab00;
+        }
+
+        .badge-submitted {
+            background-color: #e6f4ea;
+            color: var(--success-color);
+        }
+
+        .badge-late {
+            background-color: #fce8e6;
+            color: var(--danger-color);
+        }
+
+        .badge-evaluated {
+            background-color: #e8f0fe;
+            color: var(--primary-color);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--light-text);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--border-color);
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .content {
+                padding: 84px 16px 16px 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <a href="/ta-dashboard" class="logo">
+            <i class="fas fa-graduation-cap"></i>
+            Classroom
+        </a>
+        <div class="greeting">
+            <span th:text="${'Hi, ' + currentUser.firstName}">Hi, User</span>
+            <div class="avatar" th:text="${#strings.substring(currentUser.firstName,0,1)}">U</div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-nav">
+            <a href="/ta-dashboard" class="nav-item">
+                <i class="fas fa-home"></i>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item active">
+                <i class="fas fa-book"></i>
+                Courses
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Course Header -->
+        <div class="course-header">
+            <div>
+                <h1 th:text="${course.name}">Course Name</h1>
+                <div class="course-info">
+                    <span class="course-code" th:text="${course.courseCode}">CS101</span>
+                    <span th:text="${'TA for ' + course.teacher.firstName + ' ' + course.teacher.lastName}">TA for John Doe</span>
+                </div>
+            </div>
+            <a href="/ta-dashboard" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('assignments')">Assignments</div>
+            <div class="tab" onclick="switchTab('students')">Students</div>
+        </div>
+
+        <!-- Assignments Tab -->
+        <div id="assignments-tab" class="tab-content">
+            <!-- Assignments Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Assignments</div>
+                </div>
+                <div class="card-body">
+                    <table class="table" th:if="${!assignments.empty}">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Due Date</th>
+                                <th>Submissions</th>
+                                <th>Pending</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="assignment : ${assignments}">
+                                <td th:text="${assignment.title}">Assignment Title</td>
+                                <td th:text="${#temporals.format(assignment.deadline, 'MMM d, yyyy, h:mm a')}">Oct 15, 2023</td>
+                                <td th:text="${assignmentStats[assignment.id].totalSubmissions} + '/' + ${assignmentStats[assignment.id].totalStudents}">10/20</td>
+                                <td th:text="${assignmentStats[assignment.id].pendingEvaluations}">5</td>
+                                <td>
+                                    <a th:href="@{'/ta-view/course/' + ${course.id} + '/assignment/' + ${assignment.id}}" class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="empty-state" th:if="${assignments.empty}">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>No assignments available for this course.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Submissions Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Pending Submissions</div>
+                </div>
+                <div class="card-body">
+                    <table class="table" th:if="${!pendingSubmissions.empty}">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Assignment</th>
+                                <th>Submitted On</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="submission : ${pendingSubmissions}">
+                                <td th:text="${submission.student.firstName + ' ' + submission.student.lastName}">John Doe</td>
+                                <td th:text="${submission.assignment.title}">Assignment Title</td>
+                                <td th:text="${#temporals.format(submission.submittedAt, 'MMM d, yyyy, h:mm a')}">Oct 15, 2023</td>
+                                <td>
+                                    <span class="badge" th:classappend="${submission.submittedAt.isAfter(submission.assignment.deadline) ? 'badge-late' : 'badge-submitted'}"
+                                          th:text="${submission.submittedAt.isAfter(submission.assignment.deadline) ? 'Late' : 'Submitted'}">
+                                        Submitted
+                                    </span>
+                                </td>
+                                <td>
+                                    <a th:href="@{'/ta-view/submission/' + ${submission.id} + '/evaluate'}" class="btn btn-primary">
+                                        <i class="fas fa-clipboard-check"></i> Evaluate
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="empty-state" th:if="${pendingSubmissions.empty}">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No pending submissions to evaluate.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="students-tab" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Students</div>
+                </div>
+                <div class="card-body">
+                    <table class="table" th:if="${!students.empty}">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Assignments Submitted</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="student : ${students}">
+                                <td th:text="${student.firstName + ' ' + student.lastName}">John Doe</td>
+                                <td th:text="${student.email}">john@example.com</td>
+                                <td th:text="${studentStats[student.id].submittedCount} + '/' + ${assignments.size()}">5/10</td>
+                                <td>
+                                    <a th:href="@{'/ta-view/course/' + ${course.id} + '/student/' + ${student.id}}" class="btn btn-primary">
+                                        <i class="fas fa-user"></i> View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="empty-state" th:if="${students.empty}">
+                        <i class="fas fa-users"></i>
+                        <p>No students enrolled in this course.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show the selected tab content and activate the tab
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            document.querySelector('.tab[onclick="switchTab(\'' + tabName + '\')"]').classList.add('active');
+        }
+    </script>
+</body>
+
+</html> 

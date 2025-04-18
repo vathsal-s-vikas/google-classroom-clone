@@ -6,8 +6,8 @@
     <title th:text="${course.name + ' - Student View'}">Course - Student View</title>
     
     <!-- CSRF tokens for security -->
-    <meta name="_csrf" th:content="${_csrf?.token}" />
-    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}" />
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}" />
     
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -266,20 +266,21 @@
         }
         
         .assignment-status {
+            display: inline-block;
             padding: 0.3rem 0.8rem;
-            border-radius: 100px;
-            font-size: 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
             font-weight: 500;
+            color: #fff;
         }
         
         .status-pending {
-            background-color: #f8f9fa;
-            color: #6c757d;
+            background-color: #ffc107;
+            color: #212529;
         }
         
         .status-submitted {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #28a745;
         }
         
         .status-late {
@@ -607,6 +608,77 @@
             height: 2px;
             background-color: #3f51b5;
         }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        /* Content item styles */
+        .content-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .content-item {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.2rem;
+        }
+        
+        .content-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+        
+        .content-item-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .content-item-title i {
+            color: #3f51b5;
+            font-size: 1.2rem;
+        }
+        
+        .content-item-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .content-item-description {
+            margin-bottom: 1rem;
+            color: #555;
+        }
+        
+        .content-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .content-type-badge {
+            background-color: #e9ecef;
+            color: #6c757d;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
@@ -660,7 +732,7 @@
             </div>
         </div>
         
-        <div th:if="${assignments.empty}" class="empty-state">
+        <div th:if="${assignments == null || #lists.isEmpty(assignments)}" class="empty-state">
             <i class="far fa-bell-slash"></i>
             <h3>No Recent Activity</h3>
             <p>Check back later for course announcements and updates.</p>
@@ -669,11 +741,13 @@
     
     <!-- Assignments Tab -->
     <div class="tab-content" id="assignments">
-        <div th:if="${!assignments.empty}">
+        <div th:if="${assignments != null && !#lists.isEmpty(assignments)}">
             <div class="assignment-item" th:each="assignment : ${assignments}">
                 <div class="assignment-header">
                     <div class="assignment-title" th:text="${assignment.title}">Assignment Title</div>
-                    <div class="assignment-status status-pending">
+                    <div class="assignment-status" 
+                         th:classappend="${assignment.submitted ? (assignment.evaluated ? 'status-graded' : 'status-submitted') : 'status-pending'}"
+                         th:text="${assignment.submitted ? (assignment.evaluated ? 'Evaluated' : 'Submitted') : 'Pending'}">
                         Pending
                     </div>
                 </div>
@@ -689,14 +763,17 @@
                     <button class="btn btn-outline" th:attr="data-id=${assignment.id}" onclick="viewAssignment(this.getAttribute('data-id'))">
                         <i class="fas fa-eye"></i> View Details
                     </button>
-                    <button class="btn btn-primary" th:attr="data-id=${assignment.id}" onclick="submitAssignment(this.getAttribute('data-id'))">
+                    <button class="btn btn-primary" th:attr="data-id=${assignment.id}" th:if="${!assignment.submitted}" onclick="submitAssignment(this.getAttribute('data-id'))">
                         <i class="fas fa-upload"></i> Submit Assignment
+                    </button>
+                    <button class="btn btn-secondary" th:attr="data-id=${assignment.id}" th:if="${assignment.submitted}" onclick="viewSubmission(this.getAttribute('data-id'))">
+                        <i class="fas fa-file-alt"></i> View Submission
                     </button>
                 </div>
             </div>
         </div>
         
-        <div th:if="${assignments.empty}" class="empty-state">
+        <div th:if="${assignments == null || #lists.isEmpty(assignments)}" class="empty-state">
             <i class="fas fa-tasks"></i>
             <h3>No Assignments Yet</h3>
             <p>There are no assignments for this course yet. Check back later.</p>
@@ -705,7 +782,11 @@
     
     <!-- Content Tab -->
     <div class="tab-content" id="content">
-        <div class="empty-state">
+        <div id="content-items-container" class="content-list">
+            <!-- Content items will be loaded here -->
+        </div>
+        
+        <div class="empty-state" id="no-content-placeholder">
             <i class="fas fa-book"></i>
             <h3>No Content Available</h3>
             <p>The teacher hasn't shared any study materials yet.</p>
@@ -727,6 +808,11 @@
             // Add active class to clicked tab and corresponding content
             tab.classList.add('active');
             document.getElementById(tab.dataset.tab).classList.add('active');
+            
+            // Load content if content tab is selected
+            if (tab.dataset.tab === 'content') {
+                loadCourseContent();
+            }
         });
     });
     
@@ -760,6 +846,106 @@
             toast.classList.remove('show');
         }, 3000);
     }
+    
+    // Function to load course content
+    function loadCourseContent() {
+        // Extract course ID from URL
+        const courseId = window.location.pathname.split('/').pop();
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        // Fetch content items
+        fetch(`/api/courses/${courseId}/content`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to load course content');
+            }
+        })
+        .then(contentItems => {
+            const container = document.getElementById('content-items-container');
+            const placeholder = document.getElementById('no-content-placeholder');
+            
+            if (contentItems.length === 0) {
+                // Show placeholder if no content
+                placeholder.style.display = 'block';
+                container.innerHTML = '';
+            } else {
+                // Hide placeholder and show content items
+                placeholder.style.display = 'none';
+                
+                // Create HTML for content items
+                const contentHTML = contentItems.map(item => `
+                    <div class="content-item card">
+                        <div class="content-item-header">
+                            <div class="content-item-title">
+                                <i class="fas ${getContentIcon(item.type)}"></i>
+                                <h3>${item.title}</h3>
+                            </div>
+                        </div>
+                        <div class="content-item-description">${item.description || ''}</div>
+                        <div class="content-item-meta">
+                            ${item.link ? `<a href="${item.link}" target="_blank" class="btn btn-outline btn-sm">
+                                <i class="fas fa-external-link-alt"></i> Open Link
+                            </a>` : ''}
+                            ${item.fileId ? `<a href="/api/content/${item.id}/download" class="btn btn-outline btn-sm">
+                                <i class="fas fa-download"></i> Download
+                            </a>` : ''}
+                            <span class="content-type-badge">${item.type}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+                container.innerHTML = contentHTML;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message || 'Error loading content', 'error');
+        });
+    }
+    
+    // Helper function to get appropriate icon for content type
+    function getContentIcon(type) {
+        switch (type) {
+            case 'DOCUMENT':
+                return 'fa-file-alt';
+            case 'LINK':
+                return 'fa-link';
+            case 'VIDEO':
+                return 'fa-video';
+            default:
+                return 'fa-file';
+        }
+    }
+    
+    // Format file size helper
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Initialize content tab when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load content if content tab is initially active
+        if (document.querySelector('.tab[data-tab="content"]').classList.contains('active')) {
+            loadCourseContent();
+        }
+    });
     
     // View assignment details
     function viewAssignment(assignmentId) {
@@ -1135,15 +1321,6 @@
         });
     }
     
-    // Format file size
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-    
     // Download attachment function
     function downloadAttachment(attachmentId, fileName) {
         // Get CSRF tokens
@@ -1188,54 +1365,14 @@
         });
     }
     
-    // Add this function after the existing script functions
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get CSRF tokens for requests
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content") || '';
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content") || '';
+    function viewSubmission(assignmentId) {
+        // Get the courseId from the current URL
+        const pathSegments = window.location.pathname.split('/');
+        const courseId = pathSegments[pathSegments.indexOf('course') + 1];
         
-        // Get all assignments and check their submission status
-        const assignments = document.querySelectorAll('.assignment-item');
-        
-        assignments.forEach(assignment => {
-            const assignmentId = assignment.querySelector('button').getAttribute('data-id');
-            const statusElement = assignment.querySelector('.assignment-status');
-            
-            // Only proceed if we have valid elements
-            if (!assignmentId || !statusElement) return;
-            
-            console.log('Checking submission status for assignment ID:', assignmentId);
-            
-            // Fetch submission status for this assignment and current user
-            fetch(`/api/submissions/check-status/${assignmentId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    [header]: token
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.submitted) {
-                    statusElement.textContent = 'Submitted';
-                    statusElement.className = 'assignment-status status-submitted';
-                    
-                    if (data.isLate) {
-                        statusElement.textContent = 'Late Submission';
-                        statusElement.className = 'assignment-status status-late';
-                    }
-                    
-                    if (data.isEvaluated) {
-                        statusElement.textContent = 'Evaluated';
-                        statusElement.className = 'assignment-status status-graded';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error checking submission status:', error);
-            });
-        });
-    });
+        // Open modal or redirect to submission detail page
+        window.location.href = `/student/course/${courseId}/assignment/${assignmentId}/submission`;
+    }
 </script>
 
 </body>
