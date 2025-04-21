@@ -313,6 +313,17 @@
                 <p>Sign in to your account</p>
             </div>
 
+            <!-- Add alert messages -->
+            <div th:if="${param.error}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+                <i class="fas fa-exclamation-circle"></i> Invalid username or password
+            </div>
+            <div th:if="${param.logout}" class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+                <i class="fas fa-check-circle"></i> You have been successfully logged out
+            </div>
+            <div th:if="${param.expired}" class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+                <i class="fas fa-exclamation-triangle"></i> Your session has expired. Please log in again
+            </div>
+
             <form action="/login" method="post">
                 <div class="form-group">
                     <label for="email">Email address</label>

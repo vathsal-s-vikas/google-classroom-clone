@@ -679,6 +679,190 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
+        
+        /* Team management styles */
+        .group-assignment-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .group-assignment-header {
+            margin-bottom: 1rem;
+        }
+        
+        .group-assignment-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .team-status-container {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .team-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .team-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .team-project-title {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .team-invitations-container {
+            margin-top: 2rem;
+        }
+        
+        .invitation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .invitation-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .team-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .team-list-meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        #team-members-list {
+            margin-bottom: 1.5rem;
+        }
+        
+        .team-member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .team-member-item:last-child {
+            border-bottom: none;
+        }
+        
+        .team-member-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #3f51b5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .leader-badge {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .pending-badge {
+            background-color: #6c757d;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .classmate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .classmate-item:last-child {
+            border-bottom: none;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 1rem;
+            color: #6c757d;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            padding: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -694,7 +878,10 @@
         <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser.name.substring(0,1).toUpperCase()}">S</div>
         <div class="dropdown" id="avatarDropdown">
             <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+            <form action="/logout" method="post" style="margin: 0; padding: 0;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 0.5rem 1rem; font-size: 0.9rem; color: #333; cursor: pointer;">Logout</button>
+            </form>
         </div>
     </div>
 </div>
@@ -714,6 +901,7 @@
     <div class="tabs">
         <div class="tab active" data-tab="stream">Stream</div>
         <div class="tab" data-tab="assignments">Assignments</div>
+        <div class="tab" data-tab="teams">Teams</div>
         <div class="tab" data-tab="content">Content</div>
     </div>
     
@@ -780,6 +968,56 @@
         </div>
     </div>
     
+    <!-- Teams Tab -->
+    <div class="tab-content" id="teams">
+        <div class="card">
+            <h2>My Teams</h2>
+            <p class="info-text">Manage your teams for group assignments in this course.</p>
+            
+            <!-- Group Assignments List -->
+            <div class="group-assignments-container">
+                <div th:if="${assignments == null || #lists.isEmpty(assignments) || #lists.isEmpty(assignments.?[assignmentType.name() == 'GROUP'])}" class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No Group Assignments</h3>
+                    <p>There are no group assignments in this course yet.</p>
+                </div>
+                
+                <div th:each="assignment : ${assignments}" th:if="${assignment.assignmentType.name() == 'GROUP' && assignment.groupAssignment != null}" class="group-assignment-card">
+                    <div class="group-assignment-header">
+                        <h3 th:text="${assignment.title}">Group Assignment Title</h3>
+                        <div class="group-assignment-meta">
+                            <span th:if="${assignment.groupAssignment != null}"><i class="fas fa-user-friends"></i> <span th:text="${'Team Size: ' + (assignment.groupAssignment.minTeamSize != null ? assignment.groupAssignment.minTeamSize : '-') + '-' + (assignment.groupAssignment.maxTeamSize != null ? assignment.groupAssignment.maxTeamSize : '-')}">Team Size: 2-4</span></span>
+                            <span><i class="fas fa-calendar"></i> <span th:text="${'Due: ' + #temporals.format(assignment.deadline, 'MMM dd, yyyy')}">Due: May 15, 2023</span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Team status for this assignment -->
+                    <div th:attr="id='team-status-' + ${assignment.id}" class="team-status-container">
+                        <div class="loading">Checking team status...</div>
+                    </div>
+                    
+                    <!-- Team actions -->
+                    <div class="team-actions" th:attr="data-assignment-id=${assignment.id}">
+                        <button class="btn btn-primary create-team-btn" th:onclick="'showCreateTeamModal(' + ${assignment.id} + ')'">
+                            <i class="fas fa-plus"></i> Create Team
+                        </button>
+                        <button class="btn btn-outline join-team-btn" th:onclick="'showJoinTeamModal(' + ${assignment.id} + ')'">
+                            <i class="fas fa-sign-in-alt"></i> Join Team
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Team Invitations -->
+            <div class="team-invitations-container">
+                <h3>Team Invitations</h3>
+                <div id="team-invitations-list">
+                    <div class="loading">Loading invitations...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Content Tab -->
     <div class="tab-content" id="content">
         <div id="content-items-container" class="content-list">
@@ -796,6 +1034,87 @@
 
 <!-- Toast -->
 <div id="toast" class="toast">Operation successful!</div>
+
+<!-- Create Team Modal -->
+<div id="createTeamModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeCreateTeamModal()">&times;</span>
+        <h2>Create New Team</h2>
+        <form id="createTeamForm">
+            <input type="hidden" id="team-assignment-id" name="assignmentId">
+            
+            <div class="form-group">
+                <label for="team-name">Team Name*</label>
+                <input type="text" id="team-name" name="name" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="project-title">Project Title</label>
+                <input type="text" id="project-title" name="projectTitle" class="form-control">
+                <small>Optional, depending on the assignment requirements</small>
+            </div>
+            
+            <div class="form-error" id="create-team-error"></div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline" onclick="closeCreateTeamModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Team</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Join Team Modal -->
+<div id="joinTeamModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeJoinTeamModal()">&times;</span>
+        <h2>Available Teams</h2>
+        <p>Join an existing team for this assignment:</p>
+        
+        <div id="available-teams-list">
+            <div class="loading">Loading available teams...</div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline" onclick="closeJoinTeamModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Team Management Modal -->
+<div id="teamManagementModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeTeamManagementModal()">&times;</span>
+        <h2>Team Management</h2>
+        
+        <div id="team-details-container">
+            <div class="loading">Loading team details...</div>
+        </div>
+        
+        <div id="team-members-container">
+            <h3>Team Members</h3>
+            <div id="team-members-list">
+                <div class="loading">Loading team members...</div>
+            </div>
+        </div>
+        
+        <div id="invite-members-container">
+            <h3>Invite Classmates</h3>
+            <div class="form-group">
+                <input type="text" id="classmate-search" class="form-control" placeholder="Search for classmates...">
+            </div>
+            <div id="available-classmates-list">
+                <div class="loading">Loading classmates...</div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn btn-danger" id="leave-team-btn" onclick="confirmLeaveTeam()">Leave Team</button>
+            <button type="button" class="btn btn-danger" id="delete-team-btn" onclick="confirmDeleteTeam()">Delete Team</button>
+            <button type="button" class="btn btn-outline" onclick="closeTeamManagementModal()">Close</button>
+        </div>
+    </div>
+</div>
 
 <script>
     // Tab switching
@@ -939,11 +1258,114 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
-    // Initialize content tab when page loads
+    // Initialize page with proper error handling
     document.addEventListener('DOMContentLoaded', function() {
-        // Load content if content tab is initially active
-        if (document.querySelector('.tab[data-tab="content"]').classList.contains('active')) {
-            loadCourseContent();
+        try {
+            // Set default active tab to assignments
+            const assignmentsTab = document.getElementById('assignments');
+            if (assignmentsTab) {
+                assignmentsTab.classList.add('active');
+                const assignmentsTabButton = document.querySelector('.tab[data-tab="assignments"]');
+                if (assignmentsTabButton) {
+                    assignmentsTabButton.classList.add('active');
+                }
+            }
+            
+            // Load team invitations when page loads
+            loadTeamInvitations();
+            
+            // Log for debugging
+            console.log('Looking for group assignment cards...');
+            
+            // Load team status for all proper group assignments
+            const groupCards = document.querySelectorAll('.group-assignment-card');
+            console.log('Found', groupCards.length, 'group assignment cards');
+            
+            if (groupCards.length === 0) {
+                console.log('No group assignments found on this page');
+            } else {
+                groupCards.forEach((card, index) => {
+                    const actionsDiv = card.querySelector('.team-actions');
+                    if (!actionsDiv) {
+                        console.warn(`Group card ${index} has no actions div`);
+                        return;
+                    }
+                    
+                    const assignmentId = actionsDiv.dataset.assignmentId;
+                    if (assignmentId) {
+                        console.log(`Loading team status for group assignment ID: ${assignmentId}`);
+                        loadTeamStatus(assignmentId);
+                    } else {
+                        console.warn(`Cannot find assignment ID for group assignment card ${index}`);
+                    }
+                });
+            }
+            
+            // Set up form submission handlers
+            const createTeamForm = document.getElementById('createTeamForm');
+            if (createTeamForm) {
+                createTeamForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const errorContainer = document.getElementById('create-team-error');
+                    if (errorContainer) errorContainer.textContent = '';
+                    
+                    const assignmentId = document.getElementById('team-assignment-id').value;
+                    const teamName = document.getElementById('team-name').value;
+                    const projectTitle = document.getElementById('project-title').value;
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+                    
+                    fetch(`/api/teams/assignment/${assignmentId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken
+                        },
+                        credentials: 'same-origin', // Ensure cookies are sent with the request
+                        body: JSON.stringify({
+                            name: teamName,
+                            projectTitle: projectTitle
+                        })
+                    })
+                    .then(response => {
+                        if (response.status === 401) {
+                            // Authentication error
+                            throw new Error('You must be logged in to create a team. Please refresh the page and log in again.');
+                        }
+                        
+                        return response.json().then(data => {
+                            if (!response.ok) {
+                                throw new Error(data.message || 'Failed to create team');
+                            }
+                            return data;
+                        });
+                    })
+                    .then(team => {
+                        closeCreateTeamModal();
+                        loadTeamStatus(assignmentId);
+                        showSuccessMessage('Team created successfully!');
+                    })
+                    .catch(error => {
+                        if (errorContainer) errorContainer.textContent = error.message;
+                        
+                        // If authentication error, redirect to login after a delay
+                        if (error.message.includes('logged in')) {
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 3000);
+                        }
+                    });
+                });
+            } else {
+                console.log('Create team form element not found in DOM');
+            }
+            
+            console.log('Student view initialization complete');
+        } catch (error) {
+            console.error('Error during page initialization:', error);
         }
     });
     
@@ -1372,6 +1794,632 @@
         
         // Open modal or redirect to submission detail page
         window.location.href = `/student/course/${courseId}/assignment/${assignmentId}/submission`;
+    }
+    
+    // Team management functions
+    function showCreateTeamModal(assignmentId) {
+        document.getElementById('team-assignment-id').value = assignmentId;
+        document.getElementById('createTeamModal').style.display = 'block';
+        document.getElementById('create-team-error').textContent = '';
+        document.getElementById('team-name').focus();
+    }
+    
+    function closeCreateTeamModal() {
+        document.getElementById('createTeamModal').style.display = 'none';
+        document.getElementById('createTeamForm').reset();
+    }
+    
+    function showJoinTeamModal(assignmentId) {
+        document.getElementById('joinTeamModal').style.display = 'block';
+        loadAvailableTeams(assignmentId);
+    }
+    
+    function closeJoinTeamModal() {
+        document.getElementById('joinTeamModal').style.display = 'none';
+    }
+    
+    function showTeamManagementModal(teamId) {
+        const modal = document.getElementById('teamManagementModal');
+        modal.style.display = 'block';
+        
+        // Load team details
+        loadTeamDetails(teamId);
+        loadTeamMembers(teamId);
+    }
+    
+    function closeTeamManagementModal() {
+        document.getElementById('teamManagementModal').style.display = 'none';
+    }
+    
+    // Load team status for an assignment
+    function loadTeamStatus(assignmentId) {
+        const container = document.getElementById('team-status-' + assignmentId);
+        const actionsContainer = document.querySelector(`.team-actions[data-assignment-id="${assignmentId}"]`);
+        
+        if (!container) {
+            console.error(`Team status container not found for assignment ${assignmentId}`);
+            return;
+        }
+        
+        container.innerHTML = '<div class="loading">Checking team status...</div>';
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        // Add timeout for fetch to prevent it from hanging indefinitely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+        
+        fetch(`/api/teams/my-team/assignment/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin', // Ensure cookies are sent with the request
+            signal: controller.signal
+        })
+        .then(response => {
+            clearTimeout(timeoutId);
+            
+            if (response.status === 401) {
+                console.error('Authentication required for team status');
+                // Handle unauthorized error
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Authentication required. Please <a href="/login">log in</a> to view team status.</p>
+                    </div>
+                `;
+                return Promise.reject(new Error('Authentication required'));
+            }
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    // Log error details for debugging
+                    console.error('Team status response error:', data);
+                    
+                    // If the error is "This is not a group assignment" or similar, handle it gracefully
+                    if (data.message && (
+                        data.message.includes('not a group assignment') || 
+                        data.message.includes('Group assignment details not found'))) {
+                        console.warn(`Assignment ${assignmentId} is not properly configured as a group assignment.`);
+                        container.innerHTML = `
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>This assignment is not properly configured for team submissions.</p>
+                            </div>
+                        `;
+                        actionsContainer.style.display = 'none';
+                        return Promise.reject(new Error('Assignment not configured for teams'));
+                    }
+                    
+                    throw new Error(data.message || 'Failed to load team status');
+                });
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'NO_TEAM') {
+                // User is not in a team
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users-slash"></i>
+                        <p>You are not in a team for this assignment.</p>
+                        <small>Create a new team or join an existing one.</small>
+                    </div>
+                `;
+                
+                // Show the create/join actions
+                actionsContainer.style.display = 'flex';
+                return;
+            }
+            
+            // User has a team, show team info
+            container.innerHTML = `
+                <div class="team-info">
+                    <div class="team-info-header">
+                        <h4>${data.name}</h4>
+                        ${data.projectTitle ? `<div class="team-project-title">Project: ${data.projectTitle}</div>` : ''}
+                    </div>
+                    <button class="btn btn-primary manage-team-btn" onclick="showTeamManagementModal(${data.id})">
+                        <i class="fas fa-cog"></i> Manage Team
+                    </button>
+                </div>
+            `;
+            
+            // Hide the create/join actions
+            actionsContainer.style.display = 'none';
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            console.error('Error loading team status:', error);
+            
+            // Don't display error message for handled cases
+            if (error.message !== 'Authentication required' && 
+                error.message !== 'Assignment not configured for teams') {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading team status: ${error.message}</p>
+                    </div>
+                `;
+                
+                // Only show actions if it's not a configuration error
+                actionsContainer.style.display = 'flex';
+            }
+        });
+    }
+    
+    // Load available teams for an assignment
+    function loadAvailableTeams(assignmentId) {
+        const container = document.getElementById('available-teams-list');
+        container.innerHTML = '<div class="loading">Loading available teams...</div>';
+        
+        fetch(`/api/teams/assignment/${assignmentId}`)
+            .then(response => response.json())
+            .then(teams => {
+                if (teams.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p>No teams available to join for this assignment.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '<div class="teams-list">';
+                teams.forEach(team => {
+                    // Get current member count
+                    const memberCount = team.memberships ? team.memberships.filter(m => m.accepted).length : 0;
+                    
+                    html += `
+                        <div class="team-list-item">
+                            <div class="team-list-info">
+                                <div class="team-list-name">${team.name}</div>
+                                ${team.projectTitle ? `<div class="team-list-project">Project: ${team.projectTitle}</div>` : ''}
+                                <div class="team-list-meta">
+                                    <span>${memberCount} member${memberCount !== 1 ? 's' : ''}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline join-team-action" onclick="requestToJoinTeam(${team.id})">
+                                Request to Join
+                            </button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            })
+            .catch(error => {
+                container.innerHTML = `<div class="error-message">Error loading teams: ${error.message}</div>`;
+            });
+    }
+    
+    // Request to join a team
+    function requestToJoinTeam(teamId) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch(`/api/teams/${teamId}/join-request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin' // Ensure cookies are sent with the request
+        })
+        .then(response => {
+            if (response.status === 401) {
+                // Authentication error
+                throw new Error('You must be logged in to join a team. Please refresh the page and log in again.');
+            }
+            
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to request joining team');
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            closeJoinTeamModal();
+            showSuccessMessage('Join request sent successfully! Waiting for team leader approval.');
+            loadTeamInvitations();
+        })
+        .catch(error => {
+            showErrorMessage(error.message);
+            
+            // If authentication error, redirect to login after a delay
+            if (error.message.includes('logged in')) {
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 3000);
+            }
+        });
+    }
+    
+    // Load team invitations
+    function loadTeamInvitations() {
+        const container = document.getElementById('team-invitations-list');
+        container.innerHTML = '<div class="loading">Loading invitations...</div>';
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch('/api/teams/invitations', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin' // Ensure cookies are sent with the request
+        })
+        .then(response => {
+            if (response.status === 401) {
+                // Authentication error
+                console.error('Authentication required for team invitations');
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Authentication required. Please <a href="/login">log in</a> to view invitations.</p>
+                    </div>
+                `;
+                return Promise.reject(new Error('Authentication required'));
+            }
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to load invitations');
+                });
+            }
+            return response.json();
+        })
+        .then(invitations => {
+            if (invitations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>You don't have any pending team invitations.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="invitations-list">';
+            invitations.forEach(invitation => {
+                const assignmentTitle = invitation.team && invitation.team.groupAssignment ? 
+                    invitation.team.groupAssignment.assignment.title : 'Unknown Assignment';
+                
+                html += `
+                    <div class="invitation-item">
+                        <div class="invitation-details">
+                            <div class="invitation-title">
+                                <strong>${invitation.team ? invitation.team.name : 'Unknown Team'}</strong>
+                            </div>
+                            <div class="invitation-meta">
+                                <span>Assignment: ${assignmentTitle}</span>
+                            </div>
+                        </div>
+                        <div class="invitation-actions">
+                            <button class="btn btn-sm btn-success" onclick="acceptInvitation(${invitation.id})">
+                                <i class="fas fa-check"></i> Accept
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="rejectInvitation(${invitation.id})">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading invitations:', error);
+            if (error.message !== 'Authentication required') {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading invitations: ${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    }
+    
+    // Accept a team invitation
+    function acceptInvitation(invitationId) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch(`/api/teams/memberships/${invitationId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (response.status === 401) {
+                throw new Error('Authentication required');
+            }
+            
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to accept invitation');
+                }
+                return data;
+            });
+        })
+        .then(result => {
+            showSuccessMessage('Invitation accepted successfully!');
+            loadTeamInvitations();
+            
+            // Reload team status for all assignments
+            document.querySelectorAll('.group-assignment-card').forEach(card => {
+                const assignmentId = card.querySelector('.team-actions').dataset.assignmentId;
+                if (assignmentId) {
+                    loadTeamStatus(assignmentId);
+                }
+            });
+        })
+        .catch(error => {
+            showErrorMessage(error.message);
+        });
+    }
+    
+    // Reject a team invitation
+    function rejectInvitation(invitationId) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch(`/api/teams/memberships/${invitationId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (response.status === 401) {
+                throw new Error('Authentication required');
+            }
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to reject invitation');
+                });
+            }
+            
+            return {}; // Empty object as reject may return 204 No Content
+        })
+        .then(() => {
+            showSuccessMessage('Invitation rejected successfully!');
+            loadTeamInvitations();
+        })
+        .catch(error => {
+            showErrorMessage(error.message);
+        });
+    }
+    
+    // Helper function to check authentication status
+    function checkAuthenticationStatus() {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch('/api/auth/status', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin' // Ensure cookies are sent with the request
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.authenticated) {
+                console.log('Authentication check failed:', data.message);
+                showErrorMessage('You are not authenticated. Please log in again.');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                console.log('Authentication check successful');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking authentication status:', error);
+        });
+    }
+    
+    // Initialize team management when tab is loaded
+    document.querySelector('.tab[data-tab="teams"]').addEventListener('click', function() {
+        // First check authentication status
+        checkAuthenticationStatus();
+        
+        // Load team statuses for all group assignments
+        document.querySelectorAll('.team-status-container').forEach(container => {
+            const assignmentId = container.id.replace('team-status-', '');
+            loadTeamStatus(assignmentId);
+        });
+        
+        // Load team invitations
+        loadTeamInvitations();
+    });
+    
+    // Helper function to show success message
+    function showSuccessMessage(message) {
+        showToast(message, 'success');
+    }
+    
+    // Helper function to show error message
+    function showErrorMessage(message) {
+        showToast(message, 'error');
+    }
+    
+    // Load team details
+    function loadTeamDetails(teamId) {
+        const container = document.getElementById('team-details-container');
+        container.innerHTML = '<div class="loading">Loading team details...</div>';
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch(`/api/teams/${teamId}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (response.status === 401) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Authentication required. Please <a href="/login">log in</a> to view team details.</p>
+                    </div>
+                `;
+                return Promise.reject(new Error('Authentication required'));
+            }
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to load team details');
+                });
+            }
+            
+            return response.json();
+        })
+        .then(team => {
+            // Get the assignment title if available
+            let assignmentTitle = 'Unknown Assignment';
+            if (team.groupAssignment && team.groupAssignment.assignment) {
+                assignmentTitle = team.groupAssignment.assignment.title;
+            }
+            
+            container.innerHTML = `
+                <div class="team-detail-header">
+                    <h3>${team.name}</h3>
+                    ${team.projectTitle ? `<div class="team-project">Project: ${team.projectTitle}</div>` : ''}
+                </div>
+                <div class="team-detail-info">
+                    <div class="team-detail-item">
+                        <span class="label">Assignment:</span>
+                        <span class="value">${assignmentTitle}</span>
+                    </div>
+                    <div class="team-detail-item">
+                        <span class="label">Created:</span>
+                        <span class="value">${new Date(team.createdAt).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading team details:', error);
+            if (error.message !== 'Authentication required') {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading team details: ${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    }
+    
+    // Load team members
+    function loadTeamMembers(teamId) {
+        const container = document.getElementById('team-members-list');
+        container.innerHTML = '<div class="loading">Loading team members...</div>';
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch(`/api/teams/${teamId}/members`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (response.status === 401) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Authentication required. Please <a href="/login">log in</a> to view team members.</p>
+                    </div>
+                `;
+                return Promise.reject(new Error('Authentication required'));
+            }
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to load team members');
+                });
+            }
+            
+            return response.json();
+        })
+        .then(memberships => {
+            if (memberships.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No members in this team yet.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="team-members-list">';
+            memberships.forEach(membership => {
+                const isLeader = membership.leader;
+                const student = membership.student;
+                
+                html += `
+                    <div class="team-member-item">
+                        <div class="team-member-info">
+                            <div class="team-member-name">
+                                ${student.firstName} ${student.lastName}
+                                ${isLeader ? '<span class="leader-badge">Leader</span>' : ''}
+                            </div>
+                            <div class="team-member-email">${student.email}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading team members:', error);
+            if (error.message !== 'Authentication required') {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading team members: ${error.message}</p>
+                    </div>
+                `;
+            }
+        });
     }
 </script>
 

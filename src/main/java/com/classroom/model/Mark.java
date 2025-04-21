@@ -47,4 +47,12 @@ public class Mark {
     protected void onCreate() {
         evaluatedAt = LocalDateTime.now();
     }
+
+    /**
+     * Get the score (final marks) of this mark
+     * @return the final marks
+     */
+    public Integer getScore() {
+        return this.finalMarks;
+    }
 }

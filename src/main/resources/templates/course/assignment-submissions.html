@@ -312,7 +312,10 @@
             <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser.name.substring(0,1).toUpperCase()}">T</div>
             <div class="dropdown" id="avatarDropdown">
                 <a href="/settings">Settings</a>
-                <a href="/logout">Logout</a>
+                <form action="/logout" method="post" style="margin: 0; padding: 0;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 0.5rem 1rem; font-size: 0.9rem; color: #333; cursor: pointer;">Logout</button>
+                </form>
             </div>
         </div>
     </div>

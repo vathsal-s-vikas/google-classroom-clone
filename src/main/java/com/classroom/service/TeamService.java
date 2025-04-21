@@ -275,4 +275,21 @@ public class TeamService {
     public Optional<TeamMembership> getMembershipById(Long membershipId) {
         return teamMembershipRepository.findById(membershipId);
     }
+
+    /**
+     * Save a team membership
+     */
+    @Transactional
+    public TeamMembership saveMembership(TeamMembership membership) {
+        return teamMembershipRepository.save(membership);
+    }
+
+    /**
+     * Get a membership by team ID and student ID
+     */
+    public TeamMembership getMembershipById(Long teamId, Long studentId) {
+        Team team = getTeamById(teamId);
+        User student = userService.getUserById(studentId);
+        return teamMembershipRepository.findByTeamAndStudent(team, student);
+    }
 } 

@@ -487,6 +487,123 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
+        
+        /* Teams Tab Styles */
+        .assignment-selector {
+            margin-bottom: 10px;
+        }
+        
+        .assignment-selector-item {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .assignment-selector-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .team-size {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .teams-container {
+            margin-top: 20px;
+        }
+        
+        .teams-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .teams-count {
+            background-color: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        
+        .team-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .team-card-header {
+            background-color: #f8f9fa;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .team-meta {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+        
+        .team-members-container {
+            padding: 12px 16px;
+        }
+        
+        .team-members {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .team-member {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .team-member:last-child {
+            border-bottom: none;
+        }
+        
+        .leader-badge {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .pending-badge {
+            background-color: #6c757d;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .loading,
+        .error-message {
+            padding: 16px;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .error-message {
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -502,7 +619,10 @@
         <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser.name.substring(0,1).toUpperCase()}">T</div>
         <div class="dropdown" id="avatarDropdown">
             <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+            <form action="/logout" method="post" style="margin: 0; padding: 0;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 0.5rem 1rem; font-size: 0.9rem; color: #333; cursor: pointer;">Logout</button>
+            </form>
         </div>
     </div>
 </div>
@@ -567,7 +687,7 @@
                             <span><i class="fas fa-calendar"></i> <span th:text="${'Due: ' + #temporals.format(assignment.deadline, 'MMM dd, yyyy')}">Due: May 15, 2023</span></span>
                             <span><i class="fas fa-award"></i> <span th:text="${assignment.maxMarks + ' points'}">100 points</span></span>
                             <span><i class="fas fa-users"></i> <span th:text="${assignment.assignmentType}">INDIVIDUAL</span></span>
-                            <span th:if="${assignment.assignmentType == 'GROUP'}"><i class="fas fa-user-friends"></i> <span th:text="${'Team Size: ' + assignment.teamSize}">Team Size: 4</span></span>
+                            <span th:if="${assignment.assignmentType.name() == 'GROUP' && assignment.groupAssignment != null}"><i class="fas fa-user-friends"></i> <span th:text="${'Team Size: ' + (assignment.groupAssignment.minTeamSize != null ? assignment.groupAssignment.minTeamSize : '-') + '-' + (assignment.groupAssignment.maxTeamSize != null ? assignment.groupAssignment.maxTeamSize : '-')}">Team Size: 2-4</span></span>
                         </div>
                         <div class="assignment-description" th:text="${assignment.description}" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
                             Assignment description goes here...
@@ -579,6 +699,9 @@
                         </button>
                         <button class="btn btn-outline edit-assignment" th:attr="data-id=${assignment.id}" onclick="editAssignment(this.getAttribute('data-id'))">
                             <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button th:if="${assignment.assignmentType.name() == 'GROUP'}" class="btn btn-outline view-teams" th:attr="data-id=${assignment.id}" onclick="viewTeams(this.getAttribute('data-id'))">
+                            <i class="fas fa-users"></i> View Teams
                         </button>
                     </div>
                 </div>
@@ -622,6 +745,20 @@
                         <i class="fas fa-copy"></i> Copy
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Teams Tab - Remove this entire section -->
+    <!-- Add Teams Modal instead -->
+    <div id="teamsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <span class="close" onclick="closeTeamsModal()">&times;</span>
+            <h2 id="teamsModalTitle">Teams for Assignment</h2>
+            
+            <div id="teams-modal-container">
+                <!-- Teams will be loaded here -->
+                <div class="loading">Loading teams...</div>
             </div>
         </div>
     </div>
@@ -1183,9 +1320,90 @@
     
     document.getElementById('contentForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        // TODO: Implement content addition via API
-        showToast('Content added successfully!');
-        closeModals();
+        
+        // Get form data
+        const contentId = document.getElementById('contentId').value;
+        const courseId = document.getElementById('contentCourseId').value;
+        const title = document.getElementById('contentTitle').value;
+        const type = document.getElementById('contentType').value;
+        const link = document.getElementById('contentLink').value;
+        const description = document.getElementById('contentDescription').value;
+        const fileInput = document.getElementById('contentFile');
+        
+        // Create FormData object for file upload
+        const formData = new FormData();
+        formData.append('courseId', courseId);
+        formData.append('title', title);
+        formData.append('type', type);
+        
+        if (description) {
+            formData.append('description', description);
+        }
+        
+        if (link) {
+            formData.append('link', link);
+        }
+        
+        if (contentId) {
+            formData.append('id', contentId);
+        }
+        
+        if (fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        }
+        
+        // Get CSRF tokens
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        
+        console.log('Submitting content form:', {
+            courseId,
+            title,
+            type,
+            link: link || 'none',
+            hasFile: fileInput.files.length > 0
+        });
+        
+        // Save content
+        fetch('/api/content', {
+            method: contentId ? 'PUT' : 'POST',
+            headers: {
+                [header]: token
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                // Try to parse the error response as JSON
+                return response.text().then(text => {
+                    try {
+                        const errorObj = JSON.parse(text);
+                        throw new Error(errorObj.error || 'Failed to save content');
+                    } catch (e) {
+                        // If parsing fails, just return the text
+                        throw new Error(text || 'Failed to save content');
+                    }
+                });
+            }
+        })
+        .then(data => {
+            console.log('Content saved successfully:', data);
+            
+            // Close modal
+            closeModals();
+            
+            // Show success message
+            showToast('Content saved successfully');
+            
+            // Refresh content list
+            loadCourseContent();
+        })
+        .catch(error => {
+            console.error('Error saving content:', error);
+            showToast(error.message || 'Error saving content', 'error');
+        });
     });
     
     // View assignment details
@@ -1761,75 +1979,6 @@
         document.getElementById('contentModal').style.display = 'block';
     }
 
-    // Handle content form submission
-    document.getElementById('contentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get form data
-        const contentId = document.getElementById('contentId').value;
-        const courseId = document.getElementById('contentCourseId').value;
-        const title = document.getElementById('contentTitle').value;
-        const type = document.getElementById('contentType').value;
-        const link = document.getElementById('contentLink').value;
-        const description = document.getElementById('contentDescription').value;
-        const fileInput = document.getElementById('contentFile');
-        
-        // Create FormData object for file upload
-        const formData = new FormData();
-        formData.append('courseId', courseId);
-        formData.append('title', title);
-        formData.append('type', type);
-        formData.append('description', description);
-        
-        if (link) {
-            formData.append('link', link);
-        }
-        
-        if (contentId) {
-            formData.append('id', contentId);
-        }
-        
-        if (fileInput.files.length > 0) {
-            formData.append('file', fileInput.files[0]);
-        }
-        
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-        
-        // Save content
-        fetch('/api/content', {
-            method: contentId ? 'PUT' : 'POST',
-            headers: {
-                [header]: token
-            },
-            body: formData
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                return response.text().then(text => {
-                    throw new Error(text || 'Failed to save content');
-                });
-            }
-        })
-        .then(data => {
-            // Close modal
-            closeModals();
-            
-            // Show success message
-            showToast('Content saved successfully');
-            
-            // Refresh content list
-            loadCourseContent();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast(error.message || 'Error saving content', 'error');
-        });
-    });
-
     // Function to load course content
     function loadCourseContent() {
         const courseId = document.getElementById('courseId').value;
@@ -2044,6 +2193,382 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Load content list
         loadCourseContent();
+    });
+
+    function viewTeams(assignmentId) {
+        // First check authentication status
+        checkAuthenticationStatus();
+        loadTeamsForAssignment(assignmentId);
+    }
+
+    // Helper function to check authentication status
+    function checkAuthenticationStatus() {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        fetch('/api/auth/status', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin' // Ensure cookies are sent with the request
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.authenticated) {
+                console.log('Authentication check failed:', data.message);
+                alert('You are not authenticated. Please log in again.');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                console.log('Authentication check successful');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking authentication status:', error);
+        });
+    }
+    
+    function loadTeamsForAssignment(assignmentId) {
+        // Show modal
+        document.getElementById('teamsModal').style.display = 'block';
+        
+        // Show loading state
+        document.getElementById('teams-modal-container').innerHTML = '<div class="loading">Loading teams...</div>';
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        
+        // Track if we're already handling an auth error to prevent multiple redirects
+        if (window.handlingAuthError) {
+            document.getElementById('teams-modal-container').innerHTML = 
+                '<div class="error-message">Authentication issue is being handled. Please wait...</div>';
+            return;
+        }
+        
+        // Fetch teams for this assignment
+        fetch(`/api/teams/assignment/${assignmentId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                [csrfHeader]: csrfToken
+            },
+            credentials: 'same-origin' // Ensure cookies are sent with the request
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    // Authentication error
+                    window.handlingAuthError = true;
+                    throw new Error('Authentication required. Please log in to view teams.');
+                }
+                
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to fetch teams');
+                    });
+                }
+                return response.json();
+            })
+            .then(teams => {
+                displayTeams(teams, assignmentId);
+            })
+            .catch(error => {
+                document.getElementById('teams-modal-container').innerHTML = 
+                    `<div class="error-message">Error loading teams: ${error.message}</div>`;
+                    
+                // If authentication error, redirect to login after a delay
+                if (error.message.includes('Authentication required') && !window.authRedirectTriggered) {
+                    window.authRedirectTriggered = true;
+                    console.error('Authentication error detected, redirecting to login page');
+                    showToast('Authentication required. Redirecting to login page...', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 3000);
+                }
+            });
+    }
+
+    function displayTeams(teams, assignmentId) {
+        const container = document.getElementById('teams-modal-container');
+        
+        if (teams.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-users-slash"></i>
+                    <h3>No Teams Formed Yet</h3>
+                    <p>Students have not created any teams for this assignment.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = `
+            <div class="teams-header">
+                <h3>Teams for Assignment</h3>
+                <div class="teams-count">${teams.length} teams</div>
+            </div>
+            <div class="teams-grid">
+        `;
+        
+        teams.forEach(team => {
+            // Fetch team members for this team
+            html += `
+                <div class="team-card" data-team-id="${team.id}">
+                    <div class="team-card-header">
+                        <h4>${team.name}</h4>
+                        <div class="team-meta">
+                            ${team.projectTitle ? '<span>Project: ' + team.projectTitle + '</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="team-members-container" id="team-members-${team.id}">
+                        <div class="loading">Loading members...</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        // Now load team members for each team
+        teams.forEach(team => {
+            loadTeamMembers(team.id);
+        });
+    }
+
+    function loadTeamMembers(teamId) {
+        // Skip loading if authentication error is being handled
+        if (window.handlingAuthError) {
+            showToast('Session expired. Please wait while redirecting to login...', 'error');
+            return;
+        }
+        
+        const teamMembersContainer = document.getElementById('teamMembersContainer');
+        teamMembersContainer.innerHTML = '<p class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading team members...</p>';
+        
+        fetch(`/api/teams/${teamId}/members`, {
+            method: 'GET',
+            headers: getCSRFTokens(),
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    // Set flag to prevent multiple redirects for auth errors
+                    window.handlingAuthError = true;
+                    throw new Error('Authentication error');
+                }
+                return response.text().then(text => {
+                    throw new Error(`Error (${response.status}): ${text || response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(members => {
+            if (members.length === 0) {
+                teamMembersContainer.innerHTML = '<p class="text-center">No members in this team.</p>';
+                return;
+            }
+            
+            let html = '<div class="list-group">';
+            members.forEach(member => {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${member.fullName}</strong><br>
+                                <small>${member.email}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            teamMembersContainer.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading team members:', error);
+            
+            if (error.message === 'Authentication error') {
+                showToast('Your session has expired. Redirecting to login...', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                teamMembersContainer.innerHTML = `<p class="text-center text-danger">Error loading team members: ${error.message}</p>`;
+            }
+        });
+    }
+
+    // Add this to the JavaScript section
+    function closeTeamsModal() {
+        document.getElementById('teamsModal').style.display = 'none';
+    }
+
+    // Add this function to the script section
+    function getCSRFTokens() {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        return { [csrfHeader]: csrfToken };
+    }
+
+    // Add this to ensure application-wide authentication handling
+    window.addEventListener('load', function() {
+        // Check auth status periodically
+        setInterval(function() {
+            fetch('/api/auth/status', {
+                method: 'GET',
+                headers: getCSRFTokens(),
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        // If auth issue and not already redirecting
+                        if (!window.authRedirectTriggered) {
+                            window.authRedirectTriggered = true;
+                            window.handlingAuthError = true;
+                            console.error('Session expired or authentication issue detected');
+                            
+                            // Show toast notification
+                            showToast('Your session has expired. Redirecting to login...', 'error');
+                            
+                            // Redirect after a short delay
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 3000);
+                        }
+                    }
+                } else {
+                    // Reset flags if authentication is successful
+                    window.authRedirectTriggered = false;
+                    window.handlingAuthError = false;
+                }
+            })
+            .catch(error => {
+                console.error('Auth check error:', error);
+            });
+        }, 60000); // Check every minute
+    });
+
+    // Simple toast notification function
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Show the toast
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 5000);
+    }
+
+    // Add toast styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border-radius: 4px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            max-width: 300px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.info {
+            background: #2196F3;
+        }
+        .toast.success {
+            background: #4CAF50;
+        }
+        .toast.warning {
+            background: #FF9800;
+        }
+        .toast.error {
+            background: #F44336;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add an event listener to the create team form
+    document.getElementById('createTeamForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const assignmentId = document.getElementById('teamAssignmentId').value;
+        const teamName = document.getElementById('teamName').value;
+        
+        // Validate team name
+        if (!teamName.trim()) {
+            alert('Please enter a team name.');
+            return;
+        }
+        
+        fetch('/api/teams', {
+            method: 'POST',
+            headers: getCSRFTokens(),
+            body: JSON.stringify({
+                assignmentId: assignmentId,
+                name: teamName
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    window.handlingAuthError = true;
+                    throw new Error('Authentication error');
+                }
+                return response.text().then(text => {
+                    throw new Error(`Error (${response.status}): ${text || response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide the modal
+            new bootstrap.Modal(document.getElementById('createTeamModal')).hide();
+            
+            // Show success message
+            showToast('Team created successfully!', 'success');
+            
+            // Reload teams for this assignment
+            loadTeamsForAssignment(assignmentId);
+        })
+        .catch(error => {
+            console.error('Error creating team:', error);
+            
+            if (error.message === 'Authentication error') {
+                showToast('Your session has expired. Redirecting to login...', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                showToast(`Failed to create team: ${error.message}`, 'error');
+            }
+        });
     });
 </script>
 

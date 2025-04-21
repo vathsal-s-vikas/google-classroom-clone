@@ -5,6 +5,8 @@ import com.classroom.model.Content.ContentType;
 import com.classroom.model.Content.ContentVisibility;
 import com.classroom.model.Course;
 import com.classroom.model.User;
+import com.classroom.model.Notification;
+import com.classroom.model.Notification.NotificationType;
 import com.classroom.repository.ContentRepository;
 import com.classroom.repository.CourseMembershipRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 @Service
 public class ContentService {
@@ -266,5 +269,29 @@ public class ContentService {
      */
     public long countContentByTypeForCourse(Course course, ContentType contentType) {
         return contentRepository.countByCourseAndContentType(course, contentType);
+    }
+    
+    /**
+     * Create a notification for a new course content
+     * @param content The newly created content
+     * @param recipients The list of users to notify
+     * @return List of created notifications
+     */
+    @Transactional
+    public List<Notification> createCourseContentNotification(Content content, List<User> recipients) {
+        List<Notification> notifications = new ArrayList<>();
+        String message = "New content added to " + content.getCourse().getName() + ": " + content.getTitle();
+        
+        for (User recipient : recipients) {
+            Notification notification = notificationService.createNotification(
+                recipient,
+                message,
+                NotificationType.COURSE_UPDATE,
+                content.getId()
+            );
+            notifications.add(notification);
+        }
+        
+        return notifications;
     }
 } 

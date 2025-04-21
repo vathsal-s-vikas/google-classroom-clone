@@ -92,7 +92,7 @@ public class User {
     @Builder.Default
     private Set<Mark> evaluatedSubmissions = new HashSet<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "recipient")
     @JsonIgnore
     @Builder.Default
     private Set<Notification> notifications = new HashSet<>();

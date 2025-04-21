@@ -36,4 +36,12 @@ public class GroupAssignment {
 
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Team> teams = new HashSet<>();
+
+    /**
+     * Get the title of the group assignment
+     * @return the title of the assignment
+     */
+    public String getTitle() {
+        return this.assignment.getTitle();
+    }
 }

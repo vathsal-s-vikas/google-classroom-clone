@@ -569,15 +569,18 @@
                 <span th:if="${currentUser != null}" th:text="${currentUser.name.substring(0,1).toUpperCase()}">U</span>
                 <span th:if="${currentUser == null}">U</span>
             </div>
-            <div class="dropdown" id="userDropdown">
+            <div class="dropdown" id="avatarDropdown">
                 <a href="/ta-dashboard">Dashboard</a>
                 <a href="/profile">Profile</a>
-                <a href="/logout">Logout</a>
+                <form action="/logout" method="post" style="margin: 0; padding: 0;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 0.5rem 1rem; font-size: 0.9rem; color: #333; cursor: pointer;">Logout</button>
+                </form>
             </div>
         </div>
-    </div>
+</div>
     
-    <div class="container">
+<div class="container">
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2>Dashboard</h2>
@@ -692,7 +695,7 @@
                 <div class="courses-grid">
                     <div class="course-card" th:each="course : ${courses}" th:onclick="'window.location.href=\'/ta-view/course/' + ${course.id} + '\''">
                         <div class="course-card-content">
-                            <h3 th:text="${course.name}">Course Name</h3>
+        <h3 th:text="${course.name}">Course Name</h3>
                             <div class="course-description" th:text="${course.description}">
                                 Course description goes here. This is a longer text that will be truncated if it exceeds three lines.
                             </div>
@@ -783,7 +786,7 @@
     <script>
         // Toggle user dropdown
         function toggleDropdown() {
-            document.getElementById("userDropdown").classList.toggle("show");
+            document.getElementById("avatarDropdown").classList.toggle("show");
         }
         
         // Close dropdown when clicking outside

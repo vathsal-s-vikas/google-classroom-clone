@@ -1,15 +1,20 @@
 package com.classroom.service;
 
 import com.classroom.model.Assignment;
+import com.classroom.model.Course;
+import com.classroom.model.CourseMembership;
 import com.classroom.model.Submission;
-import com.classroom.model.User;
 import com.classroom.model.Team;
+import com.classroom.model.User;
+import com.classroom.model.UserType;
+import com.classroom.repository.CourseMembershipRepository;
 import com.classroom.repository.SubmissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -22,10 +27,16 @@ public class SubmissionService {
     private SubmissionRepository submissionRepository;
 
     @Autowired
-    private SubmissionAttachmentService submissionAttachmentService;
+    private AssignmentService assignmentService;
 
     @Autowired
-    private AssignmentService assignmentService;
+    private NotificationService notificationService;
+
+    @Autowired
+    private CourseMembershipRepository courseMembershipRepository;
+
+    @Autowired
+    private CourseMembershipService courseMembershipService;
 
     /**
      * Get all submissions for a specific assignment
@@ -161,7 +172,12 @@ public class SubmissionService {
             submission.setDaysLate(0);
         }
         
-        return submissionRepository.save(submission);
+        Submission savedSubmission = submissionRepository.save(submission);
+        
+        // Notify TAs about the new submission
+        notifyTAsAboutNewSubmission(savedSubmission);
+        
+        return savedSubmission;
     }
 
     /**
@@ -205,7 +221,12 @@ public class SubmissionService {
             submission.setDaysLate(0);
         }
         
-        return submissionRepository.save(submission);
+        Submission savedSubmission = submissionRepository.save(submission);
+        
+        // Notify TAs about the new submission
+        notifyTAsAboutNewSubmission(savedSubmission);
+        
+        return savedSubmission;
     }
 
     /**
@@ -268,12 +289,15 @@ public class SubmissionService {
             Submission savedSubmission = submissionRepository.save(existingSubmission);
             
             // Handle attachments if files are provided
+            // Commented out because SubmissionAttachmentService is not implemented yet
+            /*
             if (files != null && !files.isEmpty()) {
                 // First remove existing attachments
                 submissionAttachmentService.deleteAttachmentsBySubmission(savedSubmission);
                 // Then add new ones
                 submissionAttachmentService.saveAttachments(savedSubmission, files);
             }
+            */
             
             return savedSubmission;
         } else {
@@ -301,9 +325,12 @@ public class SubmissionService {
             Submission savedSubmission = submissionRepository.save(submission);
             
             // Handle attachments if files are provided
+            // Commented out because SubmissionAttachmentService is not implemented yet
+            /*
             if (files != null && !files.isEmpty()) {
                 submissionAttachmentService.saveAttachments(savedSubmission, files);
             }
+            */
             
             return savedSubmission;
         }
@@ -315,5 +342,30 @@ public class SubmissionService {
     @Transactional
     public void deleteSubmission(Long submissionId) {
         submissionRepository.deleteById(submissionId);
+    }
+
+    /**
+     * Notifies all TAs for this course about a new submission
+     * @param submission The new submission
+     */
+    private void notifyTAsAboutNewSubmission(Submission submission) {
+        Assignment assignment = submission.getAssignment();
+        Course course = assignment.getCourse();
+        
+        String submitterName = submission.getStudent() != null 
+            ? submission.getStudent().getName() 
+            : submission.getTeam().getName();
+            
+        // Get all TAs for this course
+        courseMembershipService.getCourseMembershipsByCourseAndRole(course, UserType.TA)
+            .forEach(membership -> {
+                User ta = membership.getUser();
+                notificationService.notifyNewSubmission(
+                    ta, 
+                    submitterName,
+                    course.getName() + " - " + assignment.getTitle(),
+                    submission.getId()
+                );
+            });
     }
 } 

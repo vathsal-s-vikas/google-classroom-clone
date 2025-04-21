@@ -1,48 +1,52 @@
 package com.classroom.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Table(name = "notifications")
 public class Notification {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User recipient;
 
     @Column(nullable = false)
     private String message;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "notification_type", nullable = false)
-    private NotificationType notificationType;
+    @Column(nullable = false)
+    private NotificationType type;
 
-    @Column(name = "related_id")
-    private Long relatedId;
+    @Column(name = "related_entity_id")
+    private Long relatedEntityId;
 
-    @Column(name = "is_read")
-    private boolean isRead;
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean isRead = false;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @Builder.Default
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum NotificationType {
-        ASSIGNMENT_POSTED, SUBMISSION_GRADED, COURSE_CONTENT_ADDED,
-        DEADLINE_REMINDER, TEAM_INVITATION
+        NEW_SUBMISSION,
+        SUBMISSION_GRADED,
+        ASSIGNMENT_CREATED,
+        COMMENT_ADDED,
+        COURSE_UPDATE,
+        TEAM_INVITATION
     }
 }

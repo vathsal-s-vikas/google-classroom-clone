@@ -27,6 +27,9 @@ public class MarkService {
     @Autowired
     private AssignmentService assignmentService;
     
+    @Autowired
+    private NotificationService notificationService;
+    
     /**
      * Get mark by ID
      */
@@ -136,7 +139,12 @@ public class MarkService {
         submission.setEvaluated(true);
         submissionService.markAsEvaluated(submission.getId());
         
-        return markRepository.save(mark);
+        Mark savedMark = markRepository.save(mark);
+        
+        // Send notification to the student
+        notifyStudentAboutGradedSubmission(submission, savedMark);
+        
+        return savedMark;
     }
     
     /**
@@ -257,9 +265,37 @@ public class MarkService {
         if (submission != null && !submission.isEvaluated()) {
             submission.setEvaluated(true);
             submissionService.markAsEvaluated(submission.getId());
+            
+            // Send notification to the student
+            notifyStudentAboutGradedSubmission(submission, mark);
         }
         
         return markRepository.save(mark);
+    }
+    
+    /**
+     * Notify student(s) about their graded submission
+     * @param submission The submission that has been graded
+     * @param mark The mark that was given
+     */
+    private void notifyStudentAboutGradedSubmission(Submission submission, Mark mark) {
+        if (submission.getStudent() != null) {
+            // Individual submission
+            notificationService.notifyGradedSubmission(
+                submission.getStudent(),
+                submission.getAssignment().getTitle(),
+                mark.getFinalMarks()
+            );
+        } else if (submission.getTeam() != null) {
+            // Team submission - notify all team members
+            submission.getTeam().getUsers().forEach(student -> 
+                notificationService.notifyGradedSubmission(
+                    student,
+                    submission.getAssignment().getTitle(),
+                    mark.getFinalMarks()
+                )
+            );
+        }
     }
     
     // Helper class for mark statistics

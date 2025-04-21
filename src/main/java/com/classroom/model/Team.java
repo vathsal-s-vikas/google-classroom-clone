@@ -91,6 +91,17 @@ public class Team {
     }
 
     /**
+     * Get all users in this team
+     * @return List of users who are members of this team
+     */
+    public List<User> getUsers() {
+        return this.memberships.stream()
+                .filter(TeamMembership::isAccepted)
+                .map(TeamMembership::getStudent)
+                .toList();
+    }
+
+    /**
      * Remove a student from this team
      * @param student The student to remove
      */

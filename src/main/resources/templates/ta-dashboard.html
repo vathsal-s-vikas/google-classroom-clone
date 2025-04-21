@@ -423,15 +423,161 @@
                 display: none;
             }
         }
+        
+        .notification-bell {
+            position: relative;
+            margin-right: 16px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .notification-bell:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .notification-bell i {
+            font-size: 22px;
+            color: var(--text-secondary);
+        }
+        
+        .notification-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--danger-color);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-dropdown {
+            position: absolute;
+            top: 46px;
+            right: -80px;
+            width: 320px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1001;
+            max-height: 400px;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        
+        .notification-dropdown.show {
+            display: flex;
+        }
+        
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .notification-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .notification-header a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .notification-items {
+            overflow-y: auto;
+            max-height: 350px;
+        }
+        
+        .notification-items .loading {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .notification-item {
+            display: flex;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+        
+        .notification-item:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item.unread {
+            background-color: #f2f6ff;
+        }
+        
+        .notification-item.unread .notification-message {
+            font-weight: 500;
+        }
+        
+        .notification-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .notification-content {
+            flex-grow: 1;
+        }
+        
+        .notification-message {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="top-bar">
-        <a href="/ta-view/dashboard" class="logo">
+        <a href="/ta-dashboard" class="logo">
             <i class="bi bi-mortarboard"></i>
             Classroom
         </a>
         <div class="user-menu">
+            <div class="notification-bell" onclick="toggleNotificationDropdown()">
+                <i class="bi bi-bell"></i>
+                <span class="notification-count" id="notification-count">0</span>
+                <div class="notification-dropdown" id="notificationDropdown">
+                    <div class="notification-header">
+                        <h5>Notifications</h5>
+                        <a href="/notifications">See all</a>
+                    </div>
+                    <div class="notification-items" id="notification-items">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
             <div class="avatar" onclick="toggleUserDropdown()">
                 <i class="bi bi-person"></i>
             </div>
@@ -441,12 +587,18 @@
                     <div style="font-size: 14px; color: var(--text-secondary);" th:text="${currentUser.email}">user@example.com</div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/ta-view/dashboard" style="text-decoration: none; color: inherit; padding: 8px; border-radius: 4px; transition: background-color 0.3s;">
+                    <a href="/ta-dashboard" style="text-decoration: none; color: inherit; padding: 8px; border-radius: 4px; transition: background-color 0.3s;">
                         <i class="bi bi-speedometer2" style="margin-right: 8px;"></i> Dashboard
                     </a>
-                    <a href="/logout" style="text-decoration: none; color: inherit; padding: 8px; border-radius: 4px; transition: background-color 0.3s;">
-                        <i class="bi bi-box-arrow-right" style="margin-right: 8px;"></i> Sign out
+                    <a href="/notifications" style="text-decoration: none; color: inherit; padding: 8px; border-radius: 4px; transition: background-color 0.3s;">
+                        <i class="bi bi-bell" style="margin-right: 8px;"></i> Notifications
                     </a>
+                    <form action="/logout" method="post" style="margin: 0; padding: 0; display: inline;">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 8px; border-radius: 4px; transition: background-color 0.3s; text-decoration: none; color: inherit; display: flex; align-items: center;">
+                            <i class="bi bi-box-arrow-right" style="margin-right: 8px;"></i> Sign out
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -587,8 +739,137 @@
             }
         }
         
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('show');
+            
+            if (dropdown.classList.contains('show')) {
+                loadRecentNotifications();
+                
+                // Add click outside listener
+                setTimeout(() => {
+                    document.addEventListener('click', function closeNotificationDropdown(e) {
+                        if (!dropdown.contains(e.target) && !e.target.closest('.notification-bell')) {
+                            dropdown.classList.remove('show');
+                            document.removeEventListener('click', closeNotificationDropdown);
+                        }
+                    });
+                }, 0);
+            }
+        }
+        
+        function loadRecentNotifications() {
+            const notificationItems = document.getElementById('notification-items');
+            
+            // Show loading indicator
+            notificationItems.innerHTML = '<div class="loading">Loading...</div>';
+            
+            // Fetch recent unread notifications
+            fetch('/notifications/recent-unread')
+                .then(response => response.json())
+                .then(notifications => {
+                    if (notifications.length === 0) {
+                        notificationItems.innerHTML = '<div class="empty-notifications">No new notifications</div>';
+                    } else {
+                        let html = '';
+                        notifications.forEach(notification => {
+                            let iconClass = 'bi bi-bell';
+                            
+                            // Set icon based on notification type
+                            switch (notification.type) {
+                                case 'NEW_SUBMISSION':
+                                    iconClass = 'bi bi-file-earmark-text';
+                                    break;
+                                case 'SUBMISSION_GRADED':
+                                    iconClass = 'bi bi-check-circle';
+                                    break;
+                                case 'ASSIGNMENT_CREATED':
+                                    iconClass = 'bi bi-clipboard-plus';
+                                    break;
+                                case 'COMMENT_ADDED':
+                                    iconClass = 'bi bi-chat-left-text';
+                                    break;
+                            }
+                            
+                            // Format date
+                            const date = new Date(notification.createdAt);
+                            const formattedDate = date.toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: 'numeric',
+                                hour12: true
+                            });
+                            
+                            html += `
+                                <div class="notification-item ${notification.read ? '' : 'unread'}" onclick="markNotificationRead(${notification.id}, event)">
+                                    <div class="notification-icon">
+                                        <i class="${iconClass}"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <p class="notification-message">${notification.message}</p>
+                                        <p class="notification-time">${formattedDate}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        notificationItems.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                    notificationItems.innerHTML = '<div class="empty-notifications">Error loading notifications</div>';
+                });
+        }
+        
+        function markNotificationRead(id, event) {
+            // Prevent event bubbling if clicked on a specific element
+            if (event.target.tagName === 'BUTTON') {
+                return;
+            }
+            
+            fetch(`/notifications/${id}/mark-read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Update UI
+                    const notification = event.currentTarget;
+                    notification.classList.remove('unread');
+                    
+                    // Update notification count
+                    updateNotificationCount();
+                }
+            })
+            .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        function updateNotificationCount() {
+            fetch('/notifications/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    const countElement = document.getElementById('notification-count');
+                    countElement.textContent = data.count;
+                    
+                    if (data.count > 0) {
+                        countElement.style.display = 'flex';
+                    } else {
+                        countElement.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error updating notification count:', error));
+        }
+        
         document.addEventListener('DOMContentLoaded', () => {
             // Any initialization code can go here
+            updateNotificationCount();
+            
+            // Update notification count every minute
+            setInterval(updateNotificationCount, 60000);
         });
     </script>
 </body>

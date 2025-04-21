@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom | Notifications</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #1967d2;
+            --primary-light: #e8f0fe;
+            --border-color: #dadce0;
+            --success-color: #0f9d58;
+            --warning-color: #f9ab00;
+            --danger-color: #ea4335;
+            --text-primary: #3c4043;
+            --text-secondary: #5f6368;
+        }
+        
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            color: var(--text-primary);
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .top-bar {
+            display: flex;
+            align-items: center;
+            height: 64px;
+            padding: 0 24px;
+            background-color: white;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .logo i {
+            margin-right: 8px;
+            font-size: 24px;
+        }
+        
+        .user-menu {
+            margin-left: auto;
+            position: relative;
+        }
+        
+        .main-content {
+            margin-top: 64px;
+            padding: 24px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h2 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .notification-list {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+            overflow: hidden;
+        }
+        
+        .notification-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+        
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        .notification-content {
+            flex-grow: 1;
+        }
+        
+        .notification-message {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .notification-time {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+        
+        .notification-actions button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .notification-actions button:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .notification-item.unread {
+            background-color: #f2f6ff;
+        }
+        
+        .notification-item.unread .notification-message {
+            font-weight: 500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #dadce0;
+        }
+        
+        .empty-state p {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .mark-all-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .mark-all-button:hover {
+            background-color: #0d47a1;
+        }
+        
+        .back-button {
+            display: flex;
+            align-items: center;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+        
+        .back-button i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a href="/dashboard" class="logo">
+            <i class="bi bi-mortarboard"></i>
+            Classroom
+        </a>
+        <div class="user-menu">
+            <span th:if="${currentUser != null}" th:text="${currentUser.name}">User Name</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <a href="javascript:history.back()" class="back-button">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        
+        <div class="section-header">
+            <h2>Notifications</h2>
+            <button class="mark-all-button" onclick="markAllAsRead()" th:if="${!#lists.isEmpty(notifications) && notifications.?[!isRead].size() > 0}">
+                Mark All as Read
+            </button>
+        </div>
+        
+        <div class="notification-list" th:if="${!#lists.isEmpty(notifications)}">
+            <div 
+                th:each="notification : ${notifications}" 
+                th:id="'notification-' + ${notification.id}"
+                th:class="${notification.isRead ? 'notification-item' : 'notification-item unread'}"
+            >
+                <div class="notification-icon">
+                    <i th:class="${
+                        notification.type.name() == 'NEW_SUBMISSION' ? 'bi bi-file-earmark-text' :
+                        notification.type.name() == 'SUBMISSION_GRADED' ? 'bi bi-check-circle' :
+                        notification.type.name() == 'ASSIGNMENT_CREATED' ? 'bi bi-clipboard-plus' :
+                        notification.type.name() == 'COMMENT_ADDED' ? 'bi bi-chat-left-text' :
+                        'bi bi-bell'
+                    }"></i>
+                </div>
+                <div class="notification-content">
+                    <p class="notification-message" th:text="${notification.message}">Notification message</p>
+                    <p class="notification-time" th:text="${#temporals.format(notification.createdAt, 'MMM d, yyyy h:mm a')}">Jan 1, 2023 12:00 PM</p>
+                </div>
+                <div class="notification-actions">
+                    <button 
+                        th:if="${!notification.isRead}" 
+                        th:onclick="'markAsRead(' + ${notification.id} + ')'"
+                        title="Mark as read"
+                    >
+                        <i class="bi bi-check-circle"></i>
+                    </button>
+                    <button 
+                        th:onclick="'deleteNotification(' + ${notification.id} + ')'"
+                        title="Delete"
+                    >
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="empty-state" th:if="${#lists.isEmpty(notifications)}">
+            <i class="bi bi-bell"></i>
+            <p>You have no notifications</p>
+        </div>
+    </div>
+    
+    <script>
+        function markAsRead(id) {
+            fetch(`/notifications/${id}/mark-read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    const notification = document.getElementById(`notification-${id}`);
+                    notification.classList.remove('unread');
+                    // Remove the mark as read button
+                    notification.querySelector('.notification-actions button[title="Mark as read"]').remove();
+                }
+            })
+            .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        function markAllAsRead() {
+            fetch(`/notifications/mark-all-read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Update all unread notifications in the UI
+                    const unreadNotifications = document.querySelectorAll('.notification-item.unread');
+                    unreadNotifications.forEach(notification => {
+                        notification.classList.remove('unread');
+                        // Remove the mark as read button
+                        const readButton = notification.querySelector('.notification-actions button[title="Mark as read"]');
+                        if (readButton) {
+                            readButton.remove();
+                        }
+                    });
+                    
+                    // Hide the "Mark All as Read" button
+                    document.querySelector('.mark-all-button').style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error marking all notifications as read:', error));
+        }
+        
+        function deleteNotification(id) {
+            if (confirm('Are you sure you want to delete this notification?')) {
+                fetch(`/notifications/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        const notification = document.getElementById(`notification-${id}`);
+                        notification.remove();
+                        
+                        // Check if there are any notifications left
+                        const remainingNotifications = document.querySelectorAll('.notification-item');
+                        if (remainingNotifications.length === 0) {
+                            // Replace notification list with empty state
+                            const notificationList = document.querySelector('.notification-list');
+                            const emptyState = document.createElement('div');
+                            emptyState.className = 'empty-state';
+                            emptyState.innerHTML = '<i class="bi bi-bell"></i><p>You have no notifications</p>';
+                            notificationList.parentNode.replaceChild(emptyState, notificationList);
+                            
+                            // Hide the "Mark All as Read" button
+                            const markAllButton = document.querySelector('.mark-all-button');
+                            if (markAllButton) {
+                                markAllButton.style.display = 'none';
+                            }
+                        }
+                    }
+                })
+                .catch(error => console.error('Error deleting notification:', error));
+            }
+        }
+    </script>
+</body>
+</html> 

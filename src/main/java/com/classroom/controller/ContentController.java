@@ -124,15 +124,16 @@ public class ContentController {
     }
     
     /**
-     * Create an announcement for a course
+     * Create content (general endpoint)
      */
-    @PostMapping("/announcement/course/{courseId}")
-    public ResponseEntity<?> createAnnouncement(
-            @PathVariable Long courseId,
+    @PostMapping
+    public ResponseEntity<?> createContent(
+            @RequestParam Long courseId,
             @RequestParam String title,
+            @RequestParam String type,
             @RequestParam(required = false) String description,
-            @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
+            @RequestParam(required = false) String link,
+            @RequestParam(required = false) MultipartFile file,
             @AuthenticationPrincipal OAuth2User principal) {
         
         User currentUser = getCurrentUser(principal);
@@ -141,200 +142,139 @@ public class ContentController {
         // Check if user is a teacher of the course
         if (!isUserTeacherOfCourse(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can create announcements"));
+                    .body(Map.of("error", "Only teachers can create content"));
         }
         
         try {
-            Content content = contentService.createAnnouncement(
-                course, currentUser, title, description, visibility, scheduledFor
-            );
+            Content content;
+            ContentType contentType = ContentType.valueOf(type.toUpperCase());
+            ContentVisibility visibility = ContentVisibility.VISIBLE; // Default to visible
+            
+            switch (contentType) {
+                case DOCUMENT:
+                    if (file == null) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of("error", "File is required for document content"));
+                    }
+                    content = contentService.createDocument(
+                            course, currentUser, title, description, file, visibility, null);
+                    break;
+                case LINK:
+                    if (link == null || link.isEmpty()) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of("error", "Link URL is required for link content"));
+                    }
+                    content = contentService.createLink(
+                            course, currentUser, title, description, link, visibility, null);
+                    break;
+                case ANNOUNCEMENT:
+                    content = contentService.createAnnouncement(
+                            course, currentUser, title, description, visibility, null);
+                    break;
+                case VIDEO:
+                    if (link == null || link.isEmpty()) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of("error", "Video URL is required for video content"));
+                    }
+                    content = contentService.createVideo(
+                            course, currentUser, title, description, link, visibility, null);
+                    break;
+                default:
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Unsupported content type: " + type));
+            }
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(content);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to create announcement: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * Create a document for a course
-     */
-    @PostMapping("/document/course/{courseId}")
-    public ResponseEntity<?> createDocument(
-            @PathVariable Long courseId,
-            @RequestParam String title,
-            @RequestParam(required = false) String description,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Course course = courseService.getCourseById(courseId);
-        
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can upload documents"));
-        }
-        
-        try {
-            Content content = contentService.createDocument(
-                course, currentUser, title, description, file, visibility, scheduledFor
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(content);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid content type: " + e.getMessage()));
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to upload document: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * Create a link for a course
-     */
-    @PostMapping("/link/course/{courseId}")
-    public ResponseEntity<?> createLink(
-            @PathVariable Long courseId,
-            @RequestParam String title,
-            @RequestParam(required = false) String description,
-            @RequestParam String resourceUrl,
-            @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Course course = courseService.getCourseById(courseId);
-        
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can add links"));
-        }
-        
-        try {
-            Content content = contentService.createLink(
-                course, currentUser, title, description, resourceUrl, visibility, scheduledFor
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(content);
+                    .body(Map.of("error", "Failed to process file: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to add link: " + e.getMessage()));
+                    .body(Map.of("error", "Failed to create content: " + e.getMessage()));
         }
     }
     
     /**
-     * Create a video link for a course
+     * Update content (general endpoint)
      */
-    @PostMapping("/video/course/{courseId}")
-    public ResponseEntity<?> createVideo(
-            @PathVariable Long courseId,
-            @RequestParam String title,
-            @RequestParam(required = false) String description,
-            @RequestParam String videoUrl,
-            @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Course course = courseService.getCourseById(courseId);
-        
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can add videos"));
-        }
-        
-        try {
-            Content content = contentService.createVideo(
-                course, currentUser, title, description, videoUrl, visibility, scheduledFor
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(content);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to add video: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * Update content (non-document)
-     */
-    @PutMapping("/{contentId}")
+    @PutMapping
     public ResponseEntity<?> updateContent(
-            @PathVariable Long contentId,
-            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Long id,
+            @RequestParam Long courseId,
+            @RequestParam String title,
+            @RequestParam String type,
             @RequestParam(required = false) String description,
-            @RequestParam(required = false) String resourceUrl,
-            @RequestParam(required = false) ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
+            @RequestParam(required = false) String link,
+            @RequestParam(required = false) MultipartFile file,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
-        Optional<Content> contentOpt = contentService.getContentById(contentId);
-        
-        if (!contentOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Content not found"));
+        if (id == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Content ID is required for updates"));
         }
         
-        Content content = contentOpt.get();
-        Course course = content.getCourse();
+        User currentUser = getCurrentUser(principal);
+        Course course = courseService.getCourseById(courseId);
         
-        // Check if user is the uploader or a teacher of the course
-        if (!content.getUploader().equals(currentUser) && 
-            !isUserTeacherOfCourse(currentUser, course)) {
+        // Check if user is a teacher of the course
+        if (!isUserTeacherOfCourse(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "You don't have permission to update this content"));
+                    .body(Map.of("error", "Only teachers can update content"));
         }
         
         try {
-            Content updatedContent = contentService.updateContent(
-                contentId, title, description, resourceUrl, visibility, scheduledFor
-            );
+            Optional<Content> contentOpt = contentService.getContentById(id);
+            if (!contentOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Content not found with ID: " + id));
+            }
+            
+            Content existingContent = contentOpt.get();
+            
+            // Check if the content belongs to the specified course
+            if (!existingContent.getCourse().getId().equals(courseId)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Content does not belong to the specified course"));
+            }
+            
+            // Update content based on its type
+            ContentType contentType = ContentType.valueOf(type.toUpperCase());
+            Content updatedContent;
+            
+            switch (contentType) {
+                case DOCUMENT:
+                    updatedContent = contentService.updateDocumentContent(
+                            id, title, description, file, null, null);
+                    break;
+                case LINK:
+                    updatedContent = contentService.updateContent(
+                            id, title, description, link, null, null);
+                    break;
+                case ANNOUNCEMENT:
+                    updatedContent = contentService.updateContent(
+                            id, title, description, null, null, null);
+                    break;
+                case VIDEO:
+                    updatedContent = contentService.updateContent(
+                            id, title, description, link, null, null);
+                    break;
+                default:
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Unsupported content type: " + type));
+            }
+            
             return ResponseEntity.ok(updatedContent);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid content type: " + e.getMessage()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to process file: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to update content: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * Update document content
-     */
-    @PutMapping("/document/{contentId}")
-    public ResponseEntity<?> updateDocumentContent(
-            @PathVariable Long contentId,
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) MultipartFile file,
-            @RequestParam(required = false) ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Optional<Content> contentOpt = contentService.getContentById(contentId);
-        
-        if (!contentOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Content not found"));
-        }
-        
-        Content content = contentOpt.get();
-        Course course = content.getCourse();
-        
-        // Check if user is the uploader or a teacher of the course
-        if (!content.getUploader().equals(currentUser) && 
-            !isUserTeacherOfCourse(currentUser, course)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "You don't have permission to update this content"));
-        }
-        
-        try {
-            Content updatedContent = contentService.updateDocumentContent(
-                contentId, title, description, file, visibility, scheduledFor
-            );
-            return ResponseEntity.ok(updatedContent);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to update document: " + e.getMessage()));
         }
     }
     

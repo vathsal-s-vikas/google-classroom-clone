@@ -1,16 +1,24 @@
 package com.classroom.controller;
 
 import com.classroom.model.*;
+import com.classroom.security.CustomUserDetails;
 import com.classroom.service.AssignmentService;
 import com.classroom.service.TeamService;
 import com.classroom.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,56 +37,202 @@ public class TeamController {
     @Autowired
     private UserService userService;
 
-    private User getCurrentUser(OAuth2User principal) {
-        String email = principal.getAttribute("email");
-        return userService.getUserByEmail(email);
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        // Log for debugging
+        System.out.println("Debug - Authentication principal: " + (principal != null ? principal.getClass().getName() : "null"));
+        
+        try {
+            if (principal instanceof CustomUserDetails) {
+                return ((CustomUserDetails) principal).getUser();
+            } else if (principal instanceof UserDetails) {
+                String username = ((UserDetails) principal).getUsername();
+                return userService.getUserByEmail(username);
+            } else if (principal instanceof OAuth2User) {
+                OAuth2User oauth2User = (OAuth2User) principal;
+                Map<String, Object> attributes = oauth2User.getAttributes();
+                
+                // Try to find email attribute
+                String email = null;
+                if (attributes.containsKey("email")) {
+                    email = (String) attributes.get("email");
+                } else if (attributes.containsKey("mail")) {
+                    email = (String) attributes.get("mail");
+                } else if (attributes.containsKey("preferred_username")) {
+                    email = (String) attributes.get("preferred_username");
+                } else {
+                    // Try to find an attribute that looks like an email
+                    for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                        if (entry.getValue() instanceof String && 
+                            ((String)entry.getValue()).contains("@")) {
+                            email = (String)entry.getValue();
+                            break;
+                        }
+                    }
+                }
+                
+                if (email != null) {
+                    return userService.getUserByEmail(email);
+                }
+            } else if (principal instanceof String) {
+                return userService.getUserByEmail((String) principal);
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting current user: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return null;
     }
 
     /**
      * Get all teams for an assignment
      */
     @GetMapping("/assignment/{assignmentId}")
-    public ResponseEntity<List<Team>> getTeamsByAssignment(
-            @PathVariable Long assignmentId,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
-        
-        // Verify the assignment is a group assignment
-        if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP || assignment.getGroupAssignment() == null) {
-            return ResponseEntity.badRequest().build();
+    public ResponseEntity<?> getTeamsByAssignment(@PathVariable Long assignmentId) {
+        try {
+            User currentUser = getCurrentUser();
+            
+            if (currentUser == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Unauthorized");
+                error.put("message", "Authentication required. Please log in.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+            
+            System.out.println("User found: " + currentUser.getEmail() + " for teams/assignment/" + assignmentId);
+            
+            Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+            
+            // Verify the assignment is a group assignment
+            if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP || assignment.getGroupAssignment() == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Bad Request");
+                error.put("message", "This is not a group assignment.");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            GroupAssignment groupAssignment = assignment.getGroupAssignment();
+            List<Team> teams = teamService.getTeamsByAssignment(groupAssignment);
+            return ResponseEntity.ok(teams);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the error for debugging
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Internal Server Error");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-        
-        GroupAssignment groupAssignment = assignment.getGroupAssignment();
-        List<Team> teams = teamService.getTeamsByAssignment(groupAssignment);
-        return ResponseEntity.ok(teams);
     }
 
     /**
      * Get a specific team by ID
      */
     @GetMapping("/{teamId}")
-    public ResponseEntity<Team> getTeamById(
-            @PathVariable Long teamId,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Team team = teamService.getTeamById(teamId);
-        return ResponseEntity.ok(team);
+    public ResponseEntity<Team> getTeamById(@PathVariable Long teamId) {
+        try {
+            User currentUser = getCurrentUser();
+            
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            Team team = teamService.getTeamById(teamId);
+            return ResponseEntity.ok(team);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
      * Get team members for a specific team
      */
     @GetMapping("/{teamId}/members")
-    public ResponseEntity<List<TeamMembership>> getTeamMembers(
+    public ResponseEntity<?> getTeamMembers(
             @PathVariable Long teamId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
-        List<TeamMembership> members = teamService.getTeamMemberships(teamId);
-        return ResponseEntity.ok(members);
+        // Check if principal is null
+        if (principal == null) {
+            System.err.println("Principal is null for teams/" + teamId + "/members");
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Unauthorized");
+            error.put("message", "Authentication required. Please log in.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+        
+        try {
+            // Try to get user from security context if principal doesn't have right attributes
+            if (principal.getAttribute("email") == null && 
+                principal.getAttribute("mail") == null && 
+                principal.getAttribute("preferred_username") == null) {
+                
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.getPrincipal() instanceof CustomUserDetails) {
+                    CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+                    User user = userDetails.getUser();
+                    System.out.println("Retrieved user from SecurityContext for team members: " + user.getEmail());
+                    
+                    // Verify the team exists
+                    Team team;
+                    try {
+                        team = teamService.getTeamById(teamId);
+                    } catch (Exception e) {
+                        Map<String, Object> error = new HashMap<>();
+                        error.put("error", "Not Found");
+                        error.put("message", "Team not found with ID: " + teamId);
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+                    }
+                    
+                    List<TeamMembership> members = teamService.getTeamMemberships(teamId);
+                    return ResponseEntity.ok(members);
+                }
+            }
+            
+            User currentUser = getCurrentUser();
+            
+            // Check if current user was found
+            if (currentUser == null) {
+                System.err.println("Current user is null for teams/" + teamId + "/members" + 
+                                  " with principal class: " + principal.getClass().getName());
+                
+                Map<String, Object> attributes = principal.getAttributes();
+                System.err.println("Principal attributes: " + attributes.keySet());
+                
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Unauthorized");
+                error.put("message", "User not found. Please log in again.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+            
+            System.out.println("User found: " + currentUser.getEmail() + " for teams/" + teamId + "/members");
+            
+            // Verify the team exists
+            Team team;
+            try {
+                team = teamService.getTeamById(teamId);
+            } catch (Exception e) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Not Found");
+                error.put("message", "Team not found with ID: " + teamId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            
+            List<TeamMembership> members = teamService.getTeamMemberships(teamId);
+            return ResponseEntity.ok(members);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the error for debugging
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Internal Server Error");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 
     /**
@@ -90,7 +244,7 @@ public class TeamController {
             @RequestBody Map<String, String> teamData,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Assignment assignment = assignmentService.getAssignmentById(assignmentId);
         
         // Verify the assignment is a group assignment
@@ -123,7 +277,7 @@ public class TeamController {
             @RequestBody Map<String, String> teamData,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         
         try {
             // Verify user is a leader of this team
@@ -154,7 +308,7 @@ public class TeamController {
             @PathVariable Long teamId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         
         try {
             // Verify user is a leader of this team
@@ -183,7 +337,7 @@ public class TeamController {
             @PathVariable Long studentId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         
         try {
             // Verify user is a leader of this team
@@ -211,9 +365,19 @@ public class TeamController {
             @PathVariable Long membershipId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        // Check if principal is null
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         
         try {
+            User currentUser = getCurrentUser();
+            
+            // Check if current user was found
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
             TeamMembership membership = teamService.acceptTeamInvitation(membershipId);
             
             // Verify the invitation belongs to the current user
@@ -223,7 +387,10 @@ public class TeamController {
             
             return ResponseEntity.ok(membership);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the error for debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -235,9 +402,19 @@ public class TeamController {
             @PathVariable Long membershipId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        // Check if principal is null
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         
         try {
+            User currentUser = getCurrentUser();
+            
+            // Check if current user was found
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
             // Get the membership directly from the repository
             TeamMembership membership = teamService.getMembershipById(membershipId)
                 .orElseThrow(() -> new IllegalArgumentException("Membership not found"));
@@ -250,6 +427,9 @@ public class TeamController {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the error for debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -262,7 +442,7 @@ public class TeamController {
             @PathVariable Long studentId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         
         try {
             // Verify user is a leader of this team or removing themselves
@@ -294,7 +474,7 @@ public class TeamController {
             @PathVariable Long studentId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         
         try {
             // Verify user is a leader of this team
@@ -314,44 +494,135 @@ public class TeamController {
     }
 
     /**
-     * Get pending team invitations for the current user
+     * Get current user's pending team invitations
      */
     @GetMapping("/invitations")
-    public ResponseEntity<List<Map<String, Object>>> getPendingInvitations(
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        List<TeamMembership> pendingInvitations = teamService.getPendingInvitationsForStudent(currentUser);
-        
-        List<Map<String, Object>> invitationsWithDetails = pendingInvitations.stream()
-            .map(membership -> {
-                Map<String, Object> details = new HashMap<>();
-                details.put("membershipId", membership.getId());
-                details.put("team", membership.getTeam());
-                details.put("assignment", membership.getTeam().getAssignment());
-                details.put("course", membership.getTeam().getAssignment().getAssignment().getCourse());
-                return details;
-            })
-            .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(invitationsWithDetails);
+    public ResponseEntity<?> getPendingInvitations() {
+        try {
+            User currentUser = getCurrentUser();
+            
+            if (currentUser == null) {
+                System.err.println("Auth failed: No current user found for team invitations");
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Unauthorized");
+                error.put("message", "Authentication required. Please log in.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+            
+            System.out.println("Debug - Getting pending invitations for user: " + currentUser.getEmail() + " (ID: " + currentUser.getId() + ")");
+            
+            List<TeamInvitation> invitations = new ArrayList<>();
+            List<TeamMembership> memberships = teamService.getPendingInvitationsForStudent(currentUser);
+            
+            // Convert TeamMembership to TeamInvitation DTOs
+            for (TeamMembership membership : memberships) {
+                TeamInvitation invitation = new TeamInvitation();
+                invitation.setId(membership.getId());
+                invitation.setTeam(membership.getTeam());
+                
+                // Direct conversion from Date to LocalDateTime
+                Date createdDate = membership.getCreatedAt();
+                if (createdDate != null) {
+                    LocalDateTime ldt = LocalDateTime.ofInstant(
+                        createdDate.toInstant(), 
+                        ZoneId.systemDefault()
+                    );
+                    invitation.setTimestamp(ldt);
+                } else {
+                    invitation.setTimestamp(LocalDateTime.now());
+                }
+                
+                invitations.add(invitation);
+            }
+            
+            return ResponseEntity.ok(invitations);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Internal Server Error");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 
     /**
-     * Get the current user's team for a specific assignment
+     * Get current user's team for a specific assignment
      */
     @GetMapping("/my-team/assignment/{assignmentId}")
-    public ResponseEntity<Team> getMyTeamForAssignment(
-            @PathVariable Long assignmentId,
-            @AuthenticationPrincipal OAuth2User principal) {
-        
-        User currentUser = getCurrentUser(principal);
-        Team team = teamService.getTeamForStudentAndAssignment(currentUser, assignmentId);
-        
-        if (team == null) {
-            return ResponseEntity.noContent().build();
+    public ResponseEntity<?> getMyTeamByAssignment(@PathVariable Long assignmentId) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            System.out.println("Debug - Auth principal type: " + 
+                (authentication != null && authentication.getPrincipal() != null ? 
+                authentication.getPrincipal().getClass().getName() : "null"));
+            
+            User currentUser = getCurrentUser();
+            
+            if (currentUser == null) {
+                System.err.println("Auth failed: No current user found for my-team/assignment/" + assignmentId);
+                
+                // Log authentication details for debugging
+                if (authentication != null) {
+                    System.err.println("Authentication details: name=" + authentication.getName() + 
+                        ", principal=" + (authentication.getPrincipal() != null ? 
+                            authentication.getPrincipal().getClass().getName() : "null"));
+                }
+                
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Unauthorized");
+                error.put("message", "Authentication required. Please log in.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+            
+            System.out.println("Debug - Getting team for user: " + currentUser.getEmail() + 
+                " (ID: " + currentUser.getId() + ") for assignment: " + assignmentId);
+            
+            Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+            System.out.println("Debug - Found assignment: " + assignment.getTitle() + 
+                ", type: " + assignment.getAssignmentType());
+            
+            // Verify the assignment is a group assignment
+            if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP) {
+                System.err.println("Error: Assignment " + assignmentId + " is not a group assignment. Type: " + 
+                    assignment.getAssignmentType());
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Bad Request");
+                error.put("message", "This is not a group assignment.");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            if (assignment.getGroupAssignment() == null) {
+                System.err.println("Error: GroupAssignment is null for assignment " + assignmentId);
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Bad Request");
+                error.put("message", "Group assignment details not found.");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            GroupAssignment groupAssignment = assignment.getGroupAssignment();
+            System.out.println("Debug - GroupAssignment found with ID: " + groupAssignment.getAssignmentId() + 
+                ", min team size: " + groupAssignment.getMinTeamSize() + 
+                ", max team size: " + groupAssignment.getMaxTeamSize());
+                
+            Team team = teamService.getTeamForStudentAndAssignment(currentUser, assignmentId);
+            
+            if (team == null) {
+                System.out.println("Debug - No team found for user " + currentUser.getId() + 
+                    " in assignment " + assignmentId);
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "NO_TEAM");
+                response.put("message", "You are not in a team for this assignment.");
+                return ResponseEntity.ok(response);
+            }
+            
+            System.out.println("Debug - Found team: " + team.getName() + " (ID: " + team.getId() + ")");
+            return ResponseEntity.ok(team);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Internal Server Error");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-        
-        return ResponseEntity.ok(team);
     }
 } 

@@ -326,7 +326,7 @@
         .form-group {
             margin-bottom: 1.5rem;
         }
-        
+
         label {
             display: block;
             margin-bottom: 0.5rem;
@@ -483,11 +483,11 @@
             font-size: 0.8rem;
             cursor: pointer;
         }
-        
+
         .notification-action:hover {
             background-color: #303f9f;
         }
-        
+
         .notification-empty {
             padding: 20px;
             text-align: center;
@@ -720,7 +720,10 @@
         <div class="avatar" onclick="toggleDropdown()" th:text="${currentUser.name.substring(0,1).toUpperCase()}">S</div>
         <div class="dropdown" id="avatarDropdown">
             <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+            <form action="/logout" method="post" style="margin: 0; padding: 0;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 0.5rem 1rem; font-size: 0.9rem; color: #333; cursor: pointer;">Logout</button>
+            </form>
         </div>
     </div>
 </div>
@@ -1082,180 +1085,93 @@
     
     // Fetch notifications
     function fetchNotifications() {
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        // Show loading indicator
+        const notificationList = document.querySelector('.notification-list');
+        notificationList.innerHTML = '<div class="notification-loading">Loading...</div>';
         
-        fetch('/api/notifications', {
+        fetch('/notifications/recent-unread', {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                [header]: token
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
         .then(data => {
-            const notificationList = document.querySelector('.notification-list');
-            
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 notificationList.innerHTML = '<div class="notification-empty">No notifications yet</div>';
             } else {
                 notificationList.innerHTML = data.map(notification => {
                     const date = new Date(notification.createdAt);
-                    const formattedDate = formatRelativeTime(date);
+                    const formattedDate = date.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: true
+                    });
                     
-                    let actionBtn = '';
+                    let actionButtons = '';
                     
                     // Add specific action buttons based on notification type
-                    if (notification.notificationType === 'COURSE_INVITATION') {
-                        actionBtn = `
-                            <div class="notification-actions">
-                                <button class="notification-action" onclick="acceptCourseInvitation(${notification.relatedId}, ${notification.id})">
-                                    Accept Invitation
-                                </button>
-                            </div>
-                        `;
-                    } else if (notification.notificationType === 'ASSIGNMENT_CREATED') {
-                        actionBtn = `
-                            <div class="notification-actions">
-                                <button class="notification-action" onclick="viewAssignment(${notification.relatedId}, ${notification.id})">
-                                    View Assignment
-                                </button>
-                            </div>
-                        `;
-                    } else if (notification.notificationType === 'TEAM_INVITATION') {
-                        actionBtn = `
-                            <div class="notification-actions">
-                                <button class="notification-action" onclick="viewTeamInvitation(${notification.relatedId}, ${notification.id})">
-                                    View Invitation
-                                </button>
-                            </div>
-                        `;
-                    } else if (notification.notificationType === 'COURSE_CONTENT_ADDED') {
-                        actionBtn = `
-                            <div class="notification-actions">
-                                <button class="notification-action" onclick="viewContent(${notification.relatedId}, ${notification.id})">
-                                    View Content
-                                </button>
-                            </div>
-                        `;
+                    if (notification.type === 'TEAM_INVITATION') {
+                        actionButtons = `
+                        <div class="notification-actions">
+                            <button class="notification-action" onclick="viewTeamInvitation(${notification.relatedEntityId}, ${notification.id})">
+                                View invitation
+                            </button>
+                        </div>`;
+                    } else if (notification.type === 'ASSIGNMENT_CREATED') {
+                        actionButtons = `
+                        <div class="notification-actions">
+                            <button class="notification-action" onclick="viewAssignment(${notification.relatedEntityId}, ${notification.id})">
+                                View assignment
+                            </button>
+                        </div>`;
+                    } else if (notification.type === 'SUBMISSION_GRADED') {
+                        actionButtons = `
+                        <div class="notification-actions">
+                            <button class="notification-action" onclick="viewGradedSubmission(${notification.relatedEntityId}, ${notification.id})">
+                                View grade
+                            </button>
+                        </div>`;
                     }
                     
                     return `
-                        <div class="notification-item ${notification.read ? '' : 'unread'}" data-id="${notification.id}">
-                            <div class="notification-content">${notification.message}</div>
-                            <div class="notification-time">${formattedDate}</div>
-                            ${actionBtn}
-                        </div>
-                    `;
+                    <div class="notification-item ${notification.read ? '' : 'unread'}" data-id="${notification.id}">
+                        <div class="notification-content">${notification.message}</div>
+                        <div class="notification-time">${formattedDate}</div>
+                        ${actionButtons}
+                    </div>`;
                 }).join('');
             }
+            
+            // Update notification badge
+            updateNotificationBadge();
         })
         .catch(error => {
             console.error('Error fetching notifications:', error);
-        });
-    }
-    
-    // Format relative time
-    function formatRelativeTime(date) {
-        const now = new Date();
-        const diffMs = now - date;
-        const diffSec = Math.floor(diffMs / 1000);
-        const diffMin = Math.floor(diffSec / 60);
-        const diffHour = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHour / 24);
-        
-        if (diffSec < 60) {
-            return 'Just now';
-        } else if (diffMin < 60) {
-            return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
-        } else if (diffHour < 24) {
-            return `${diffHour} hour${diffHour !== 1 ? 's' : ''} ago`;
-        } else if (diffDay < 7) {
-            return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
-        } else {
-            return date.toLocaleDateString();
-        }
-    }
-    
-    // Accept course invitation
-    function acceptCourseInvitation(invitationId, notificationId) {
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-        
-        fetch(`/api/courses/invitations/${invitationId}/accept`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                [header]: token
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                // Mark notification as read
-                markNotificationAsRead(notificationId);
-                
-                // Show success message
-                showToast('Course invitation accepted successfully');
-                
-                // Refresh page after a short delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                throw new Error('Failed to accept invitation');
-            }
-        })
-        .catch(error => {
-            console.error('Error accepting invitation:', error);
-            showToast('Error accepting invitation', 'error');
-        });
-    }
-    
-    // View assignment
-    function viewAssignment(assignmentId, notificationId) {
-        // Mark notification as read
-        markNotificationAsRead(notificationId);
-        
-        // Fetch assignment details to get the course ID
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-        
-        fetch(`/api/assignments/${assignmentId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                [header]: token
-            }
-        })
-        .then(response => response.json())
-        .then(assignment => {
-            // Redirect to the assignment page
-            window.location.href = `/student/course/${assignment.course.id}/assignment/${assignmentId}`;
-        })
-        .catch(error => {
-            console.error('Error fetching assignment details:', error);
-            // Fallback to assignments tab
-            window.location.href = '/dashboard/student?tab=assignments';
+            notificationList.innerHTML = '<div class="notification-empty">Error loading notifications</div>';
         });
     }
     
     // Mark notification as read
     function markNotificationAsRead(notificationId) {
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+        // Skip if already processed
+        if (processedNotifications.includes(notificationId)) {
+            return;
+        }
         
-        fetch(`/api/notifications/${notificationId}/read`, {
+        fetch(`/notifications/${notificationId}/mark-read`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                [header]: token
+                'Content-Type': 'application/json'
             }
         })
         .then(response => {
             if (response.ok) {
+                // Track processed notification
+                processedNotifications.push(notificationId);
+                
                 // Update UI
                 const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
                 if (notificationItem) {
@@ -1263,44 +1179,23 @@
                 }
                 
                 // Refresh notification count
-                updateNotificationCount();
+                updateNotificationBadge();
             }
         })
-        .catch(error => {
-            console.error('Error marking notification as read:', error);
-        });
+        .catch(error => console.error('Error marking notification as read:', error));
     }
     
-    // Update notification count
-    function updateNotificationCount() {
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+    // View assignment
+    function viewAssignment(assignmentId, notificationId) {
+        // Mark notification as read
+        markNotificationAsRead(notificationId);
         
-        fetch('/api/notifications/unread/count', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                [header]: token
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            const badge = document.getElementById('notification-badge');
-            if (data.count > 0) {
-                badge.style.display = 'flex';
-                badge.textContent = data.count;
-            } else {
-                badge.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error updating notification count:', error);
-        });
+        // Redirect to the assignment page
+        window.location.href = `/student/course/assignment/${assignmentId}`;
     }
     
     // View team invitation
-    function viewTeamInvitation(teamMembershipId, notificationId) {
+    function viewTeamInvitation(teamInvitationId, notificationId) {
         // Mark notification as read
         markNotificationAsRead(notificationId);
         
@@ -1308,71 +1203,61 @@
         window.location.href = '/student/team-invitations';
     }
     
-    // View content
-    function viewContent(contentId, notificationId) {
+    // View graded submission
+    function viewGradedSubmission(submissionId, notificationId) {
         // Mark notification as read
         markNotificationAsRead(notificationId);
         
-        // Fetch content details to get the course ID
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-        
-        fetch(`/api/content/${contentId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                [header]: token
-            }
-        })
-        .then(response => response.json())
-        .then(content => {
-            // Redirect to the course page with content tab active
-            window.location.href = `/student/course/${content.course.id}?tab=content`;
-        })
-        .catch(error => {
-            console.error('Error fetching content details:', error);
-            // Fallback to dashboard if content details can't be fetched
-            window.location.href = '/dashboard/student';
-        });
+        // Redirect to the submission page
+        window.location.href = `/student/submission/${submissionId}`;
     }
+    
+    // Initialize processedNotifications array if it doesn't exist
+    const processedNotifications = [];
     
     // Mark all notifications as read
     function markAllNotificationsAsRead(event) {
-        event.stopPropagation(); // Prevent closing the dropdown
+        event.stopPropagation();
         
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-        
-        fetch('/api/notifications/mark-all-read', {
+        fetch('/notifications/mark-all-read', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                [header]: token
+                'Content-Type': 'application/json'
             }
         })
         .then(response => {
             if (response.ok) {
                 // Update UI
-                document.querySelectorAll('.notification-item').forEach(item => {
+                document.querySelectorAll('.notification-item.unread').forEach(item => {
                     item.classList.remove('unread');
                 });
                 
-                // Update badge
-                document.getElementById('notification-badge').style.display = 'none';
-                
-                // Show confirmation
-                showToast('All notifications marked as read');
+                // Refresh notification count
+                updateNotificationBadge();
             }
         })
-        .catch(error => {
-            console.error('Error marking all notifications as read:', error);
-        });
+        .catch(error => console.error('Error marking all notifications as read:', error));
+    }
+    
+    // Update notification badge
+    function updateNotificationBadge() {
+        fetch('/notifications/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('notification-badge');
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error updating notification badge:', error));
     }
     
     // Check for notifications on page load
     document.addEventListener('DOMContentLoaded', function() {
-        updateNotificationCount();
+        updateNotificationBadge();
         
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -1383,7 +1268,7 @@
         }
         
         // Poll for new notifications every minute
-        setInterval(updateNotificationCount, 60000);
+        setInterval(updateNotificationBadge, 60000);
     });
 </script>
 
