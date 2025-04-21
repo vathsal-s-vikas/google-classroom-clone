@@ -716,7 +716,7 @@
             
             <div class="form-group">
                 <div class="checkbox-group">
-                    <input type="checkbox" id="lateSubmissionAllowed" name="lateSubmissionAllowed">
+                    <input type="checkbox" id="lateSubmissionAllowed" name="lateSubmissionAllowed" onchange="toggleLateSubmissionOptions()">
                     <label for="lateSubmissionAllowed">Allow Late Submissions</label>
                 </div>
             </div>
@@ -816,7 +816,7 @@
             
             <div class="form-group">
                 <label for="contentType">Content Type</label>
-                <select id="contentType" name="contentType" required>
+                <select id="contentType" name="contentType" required onchange="toggleContentTypeFields()">
                     <option value="DOCUMENT">Document</option>
                     <option value="LINK">External Link</option>
                     <option value="VIDEO">Video Link</option>
@@ -887,15 +887,28 @@
     
     // Modal functions
     function openAssignmentModal() {
+        // Reset the form
+        document.getElementById('assignmentForm').reset();
+        document.getElementById('assignmentId').value = '';
+        document.getElementById('assignmentForm').dataset.assignmentId = '';
+        
+        // Set default values
+        const defaultDeadline = new Date();
+        defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+        const formattedDefaultDeadline = defaultDeadline.toISOString().slice(0, 16);
+        document.getElementById('deadline').value = formattedDefaultDeadline;
+        
+        // Reset title and display modal
+        document.getElementById('assignmentModalTitle').textContent = 'Create New Assignment';
         document.getElementById('assignmentModal').style.display = 'block';
+        
+        // Make sure team and late submission options are properly toggled
+        toggleTeamOptions();
+        toggleLateSubmissionOptions();
     }
     
     function openInviteModal() {
         document.getElementById('inviteModal').style.display = 'block';
-    }
-    
-    function openContentModal() {
-        document.getElementById('contentModal').style.display = 'block';
     }
     
     function closeModals() {
@@ -910,6 +923,14 @@
             closeModals();
         }
     });
+    
+    // Toggle late submission options when checkbox is changed
+    function toggleLateSubmissionOptions() {
+        const lateSubmissionAllowed = document.getElementById('lateSubmissionAllowed').checked;
+        const lateOptions = document.getElementById('lateSubmissionOptions');
+        
+        lateOptions.style.display = lateSubmissionAllowed ? 'block' : 'none';
+    }
     
     // Toggle team options based on assignment type
     function toggleTeamOptions() {
@@ -1032,6 +1053,14 @@
         if (formData.lateSubmissionAllowed) {
             formData.latePenaltyPercentage = document.getElementById('latePenaltyPercentage').value;
             formData.maxLateDays = document.getElementById('maxLateDays').value;
+        }
+        
+        // Add team options if it's a group assignment
+        if (formData.assignmentType === 'GROUP') {
+            formData.teamSize = document.getElementById('teamSize').value;
+            formData.minTeamSize = document.getElementById('minTeamSize').value;
+            formData.allowStudentsToCreateTeams = document.getElementById('allowStudentsToCreateTeams').checked;
+            formData.individualMarking = document.getElementById('individualMarking').checked;
         }
         
         // Get CSRF tokens
@@ -1506,6 +1535,17 @@
                 document.getElementById('maxLateDays').value = assignment.maxLateDays || '';
             }
             
+            // Toggle team options based on assignment type
+            toggleTeamOptions();
+            
+            // Populate team options if this is a group assignment
+            if (assignment.assignmentType === 'GROUP' && assignment.groupAssignment) {
+                document.getElementById('teamSize').value = assignment.groupAssignment.maxTeamSize || 4;
+                document.getElementById('minTeamSize').value = assignment.groupAssignment.minTeamSize || 2;
+                document.getElementById('allowStudentsToCreateTeams').checked = 
+                    assignment.groupAssignment.allowSelfFormingTeams === undefined ? true : assignment.groupAssignment.allowSelfFormingTeams;
+            }
+            
             // Update submit button text and behavior
             const submitButton = document.querySelector('#assignmentForm button[type="submit"]');
             submitButton.textContent = 'Update Assignment';
@@ -1752,14 +1792,95 @@
 
     // Function to open content modal
     function openContentModal() {
-        // Reset form
-        document.getElementById('contentForm').reset();
-        document.getElementById('contentId').value = '';
-        document.getElementById('content-file-list').innerHTML = '';
+        // Reset the form
+        const contentForm = document.getElementById('contentForm');
+        const contentModal = document.getElementById('contentModal');
+        const contentId = document.getElementById('contentId');
+        const fileList = document.getElementById('content-file-list');
+        
+        if (!contentForm || !contentModal || !contentId) {
+            console.error('Cannot find required modal elements');
+            return;
+        }
+        
+        contentForm.reset();
+        contentId.value = '';
+        
+        if (fileList) {
+            fileList.innerHTML = '';
+        }
+        
+        // Set default content type
+        const contentType = document.getElementById('contentType');
+        if (contentType) {
+            contentType.value = 'DOCUMENT';
+        }
+        
+        // Initialize form fields based on content type
+        toggleContentTypeFields();
         
         // Show modal
-        document.getElementById('contentModal').style.display = 'block';
+        contentModal.style.display = 'block';
     }
+
+    // Toggle content type fields based on selection
+    function toggleContentTypeFields() {
+        const contentType = document.getElementById('contentType').value;
+        const linkGroup = document.getElementById('contentLinkGroup');
+        const fileGroup = document.getElementById('contentFileGroup');
+        const contentFile = document.getElementById('contentFile');
+        const contentLink = document.getElementById('contentLink');
+        
+        // Make sure all elements exist before proceeding
+        if (!linkGroup || !fileGroup || !contentFile || !contentLink) {
+            console.error('Cannot find required content form elements');
+            return;
+        }
+        
+        // Reset required attributes
+        contentFile.removeAttribute('required');
+        contentLink.removeAttribute('required');
+        
+        if (contentType === 'DOCUMENT') {
+            linkGroup.style.display = 'none';
+            fileGroup.style.display = 'block';
+            contentFile.setAttribute('required', 'required');
+        } else if (contentType === 'LINK' || contentType === 'VIDEO') {
+            linkGroup.style.display = 'block';
+            fileGroup.style.display = 'none';
+            contentLink.setAttribute('required', 'required');
+        } else {
+            linkGroup.style.display = 'none';
+            fileGroup.style.display = 'block';
+        }
+    }
+    
+    // Initialize the form fields on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load content list
+        loadCourseContent();
+        
+        // Set up initial content type fields
+        toggleContentTypeFields();
+        
+        // Initialize late submission options on form load
+        toggleLateSubmissionOptions();
+        
+        // Set default deadline to 7 days from now
+        const defaultDeadline = new Date();
+        defaultDeadline.setDate(defaultDeadline.getDate() + 7);
+        const formattedDefaultDeadline = defaultDeadline.toISOString().slice(0, 16);
+        
+        // Set default deadline when opening the assignment creation modal
+        document.querySelectorAll('[data-modal="assignmentModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const deadlineInput = document.getElementById('deadline');
+                if (!deadlineInput.value) {
+                    deadlineInput.value = formattedDefaultDeadline;
+                }
+            });
+        });
+    });
 
     // Handle content form submission
     document.getElementById('contentForm').addEventListener('submit', function(e) {
@@ -1769,36 +1890,78 @@
         const contentId = document.getElementById('contentId').value;
         const courseId = document.getElementById('contentCourseId').value;
         const title = document.getElementById('contentTitle').value;
-        const type = document.getElementById('contentType').value;
+        const contentType = document.getElementById('contentType').value;
         const link = document.getElementById('contentLink').value;
         const description = document.getElementById('contentDescription').value;
         const fileInput = document.getElementById('contentFile');
         
+        // Validate required fields based on content type
+        if (contentType === 'DOCUMENT' && fileInput.files.length === 0 && !contentId) {
+            showToast('Please select a file for document content', 'error');
+            return;
+        }
+        
+        if ((contentType === 'LINK' || contentType === 'VIDEO') && !link) {
+            showToast('Please enter a URL for the content', 'error');
+            return;
+        }
+        
         // Create FormData object for file upload
         const formData = new FormData();
-        formData.append('courseId', courseId);
         formData.append('title', title);
-        formData.append('type', type);
         formData.append('description', description);
+        formData.append('visibility', 'VISIBLE');  // Default to visible
         
-        if (link) {
-            formData.append('link', link);
-        }
-        
-        if (contentId) {
-            formData.append('id', contentId);
-        }
-        
-        if (fileInput.files.length > 0) {
-            formData.append('file', fileInput.files[0]);
+        // Customize formData based on content type
+        if (contentType === 'LINK') {
+            formData.append('resourceUrl', link);
+        } else if (contentType === 'VIDEO') {
+            formData.append('videoUrl', link);
+        } else if (contentType === 'DOCUMENT') {
+            if (fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+            } else if (contentId) {
+                // For updates without changing the file, don't include file parameter
+                formData.append('keepExistingFile', 'true');
+            } else {
+                showToast('Please select a file for document content', 'error');
+                return;
+            }
         }
         
         // Get CSRF tokens
         const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
         const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
         
+        // Determine the appropriate endpoint based on content type
+        let endpoint;
+        
+        if (contentId) {
+            // For updates, use the general update endpoint
+            endpoint = `/api/content/${contentId}`;
+        } else {
+            // For new content, use the appropriate content type endpoint
+            switch(contentType) {
+                case 'DOCUMENT':
+                    endpoint = `/api/content/document/course/${courseId}`;
+                    break;
+                case 'LINK':
+                    endpoint = `/api/content/link/course/${courseId}`;
+                    break;
+                case 'VIDEO':
+                    endpoint = `/api/content/video/course/${courseId}`;
+                    break;
+                case 'ANNOUNCEMENT':
+                    endpoint = `/api/content/announcement/course/${courseId}`;
+                    break;
+                default:
+                    endpoint = `/api/content/document/course/${courseId}`;
+            }
+        }
+        
         // Save content
-        fetch('/api/content', {
+        console.log('Saving content to endpoint:', endpoint);
+        fetch(endpoint, {
             method: contentId ? 'PUT' : 'POST',
             headers: {
                 [header]: token
@@ -1806,15 +1969,19 @@
             body: formData
         })
         .then(response => {
+            console.log('Content creation response status:', response.status);
             if (response.ok) {
                 return response.json();
             } else {
                 return response.text().then(text => {
+                    console.error('Error response text:', text);
                     throw new Error(text || 'Failed to save content');
                 });
             }
         })
         .then(data => {
+            console.log('Content created successfully:', data);
+            
             // Close modal
             closeModals();
             
@@ -1822,10 +1989,11 @@
             showToast('Content saved successfully');
             
             // Refresh content list
+            console.log('Refreshing content list...');
             loadCourseContent();
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error saving content:', error);
             showToast(error.message || 'Error saving content', 'error');
         });
     });
@@ -1833,12 +2001,14 @@
     // Function to load course content
     function loadCourseContent() {
         const courseId = document.getElementById('courseId').value;
+        console.log('Loading content for course ID:', courseId);
         
         // Get CSRF tokens
         const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
         const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
         
         // Fetch content items
+        console.log('Fetching from:', `/api/courses/${courseId}/content`);
         fetch(`/api/courses/${courseId}/content`, {
             method: 'GET',
             headers: {
@@ -1847,31 +2017,54 @@
             }
         })
         .then(response => {
+            console.log('Content list response status:', response.status);
             if (response.ok) {
                 return response.json();
             } else {
-                throw new Error('Failed to load course content');
+                return response.text().then(text => {
+                    console.error('Error response text:', text);
+                    throw new Error('Failed to load course content');
+                });
             }
         })
         .then(contentItems => {
+            console.log('Content items received:', contentItems.length);
             const container = document.getElementById('content-items-container');
             const placeholder = document.getElementById('no-content-placeholder');
             
+            if (!container) {
+                console.error('Content container element not found');
+                return;
+            }
+            
+            if (!placeholder) {
+                console.error('Content placeholder element not found');
+                // Still try to continue as we can display content without the placeholder
+            }
+            
             if (contentItems.length === 0) {
                 // Show placeholder if no content
-                placeholder.style.display = 'block';
-                container.innerHTML = '';
-                container.appendChild(placeholder);
+                if (placeholder) {
+                    placeholder.style.display = 'block';
+                    container.innerHTML = '';
+                    container.appendChild(placeholder);
+                } else {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-book"></i><h3>No Content Available</h3><p>Add content to get started.</p></div>';
+                }
             } else {
                 // Hide placeholder and show content items
-                placeholder.style.display = 'none';
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
                 
                 // Create HTML for content items
-                const contentHTML = contentItems.map(item => `
+                const contentHTML = contentItems.map(item => {
+                    const contentType = item.contentType || item.type; // Handle both API formats
+                    return `
                     <div class="content-item">
                         <div class="content-item-header">
                             <div class="content-item-title">
-                                <i class="fas ${getContentIcon(item.type)}"></i>
+                                <i class="fas ${getContentIcon(contentType)}"></i>
                                 <h3>${item.title}</h3>
                             </div>
                             <div class="content-item-actions">
@@ -1885,16 +2078,16 @@
                         </div>
                         <div class="content-item-description">${item.description || ''}</div>
                         <div class="content-item-meta">
-                            ${item.link ? `<a href="${item.link}" target="_blank" class="btn btn-outline btn-sm">
+                            ${item.resourceUrl ? `<a href="${item.resourceUrl}" target="_blank" class="btn btn-outline btn-sm">
                                 <i class="fas fa-external-link-alt"></i> Open Link
                             </a>` : ''}
-                            ${item.fileId ? `<a href="/api/content/${item.id}/download" class="btn btn-outline btn-sm">
+                            ${item.contentData ? `<a href="/api/content/${item.id}/download" class="btn btn-outline btn-sm">
                                 <i class="fas fa-download"></i> Download
                             </a>` : ''}
-                            <span class="content-type-badge">${item.type}</span>
+                            <span class="content-type-badge">${contentType}</span>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
                 
                 container.innerHTML = contentHTML;
             }
@@ -1907,13 +2100,18 @@
 
     // Helper function to get appropriate icon for content type
     function getContentIcon(type) {
-        switch (type) {
+        // Make sure type is a string and convert to uppercase
+        const contentType = String(type || '').toUpperCase();
+        
+        switch (contentType) {
             case 'DOCUMENT':
                 return 'fa-file-alt';
             case 'LINK':
                 return 'fa-link';
             case 'VIDEO':
                 return 'fa-video';
+            case 'ANNOUNCEMENT':
+                return 'fa-bullhorn';
             default:
                 return 'fa-file';
         }
@@ -1944,20 +2142,26 @@
             // Populate form
             document.getElementById('contentId').value = content.id;
             document.getElementById('contentTitle').value = content.title;
-            document.getElementById('contentType').value = content.type;
-            document.getElementById('contentLink').value = content.link || '';
+            document.getElementById('contentType').value = content.contentType || content.type;
+            document.getElementById('contentLink').value = content.resourceUrl || '';
             document.getElementById('contentDescription').value = content.description || '';
             
             // Show file info if exists
-            if (content.fileName) {
-                document.getElementById('content-file-list').innerHTML = `
-                    <div class="file-item">
-                        <span>${content.fileName}</span>
-                    </div>
-                `;
-            } else {
-                document.getElementById('content-file-list').innerHTML = '';
+            const fileList = document.getElementById('content-file-list');
+            if (fileList) {
+                if (content.contentData) {
+                    fileList.innerHTML = `
+                        <div class="file-item">
+                            <span>Existing document</span>
+                        </div>
+                    `;
+                } else {
+                    fileList.innerHTML = '';
+                }
             }
+            
+            // Update form based on content type
+            toggleContentTypeFields();
             
             // Show modal
             document.getElementById('contentModal').style.display = 'block';

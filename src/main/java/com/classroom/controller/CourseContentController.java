@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -54,27 +55,21 @@ public class CourseContentController {
         
         if (principal instanceof CustomUserDetails) {
             return ((CustomUserDetails) principal).getUser();
-        } else if (principal instanceof OAuth2User) {
-            // OAuth2 authentication
-            String email = ((OAuth2User) principal).getAttribute("email");
-            if (email == null) {
-                throw new RuntimeException("Email not found in OAuth2 principal");
-            }
-            return userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
         } else if (principal instanceof UserDetails) {
-            // Standard UserDetails authentication
-            String username = ((UserDetails) principal).getUsername();
+            final String username = ((UserDetails) principal).getUsername();
             return userRepository.findByEmail(username)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + username));
+        } else if (principal instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) principal;
+            String email = oauth2User.getAttribute("email");
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
         } else if (principal instanceof String) {
-            // String username authentication
             String username = (String) principal;
             return userRepository.findByEmail(username)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + username));
         } else {
-            throw new RuntimeException("Unsupported principal type: " + 
-                    (principal != null ? principal.getClass().getName() : "null"));
+            throw new RuntimeException("Unsupported principal type: " + principal.getClass().getName());
         }
     }
     
@@ -94,9 +89,26 @@ public class CourseContentController {
     }
     
     /**
-     * Get all content for a course
+     * Check if a user is a TA of a course
+     */
+    private boolean isUserTAOfCourse(User user, Course course) {
+        List<CourseMembership> memberships = courseMembershipRepository.findByUserAndCourseAndRole(user, course, UserType.TA);
+        return !memberships.isEmpty();
+    }
+    
+    /**
+     * Check if a user can manage content (teacher or TA)
+     */
+    private boolean canUserManageContent(User user, Course course) {
+        return isUserTeacherOfCourse(user, course) || isUserTAOfCourse(user, course);
+    }
+    
+    /**
+     * Get all content for a course - this endpoint is accessible to all course members
+     * But students will only see visible content
      */
     @GetMapping("/{courseId}/content")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getContentByCourse(@PathVariable Long courseId) {
         try {
             System.out.println("Getting content for course ID: " + courseId);
@@ -110,11 +122,11 @@ public class CourseContentController {
                         .body(Map.of("error", "You are not a member of this course"));
             }
             
-            // If user is a teacher, return all content
+            // If user is a teacher or TA, return all content
             List<Content> contentList;
-            if (isUserTeacherOfCourse(currentUser, course)) {
+            if (canUserManageContent(currentUser, course)) {
                 contentList = contentService.getContentByCourse(course);
-                System.out.println("Returning " + contentList.size() + " content items (teacher view)");
+                System.out.println("Returning " + contentList.size() + " content items (teacher/TA view)");
             } else {
                 // If user is a student, return only visible content
                 contentList = contentService.getVisibleContentByCourse(course);

@@ -291,30 +291,43 @@ public class TADashboardController {
         Integer finalScore = score;
         Integer penaltyPercentage = 0;
         if (submission.getSubmittedAt().isAfter(assignment.getDeadline())) {
-            // Apply late submission penalty - 10% per day late
-            int daysLate = (int) ChronoUnit.DAYS.between(assignment.getDeadline(), submission.getSubmittedAt());
-            if (daysLate == 0) daysLate = 1; // If it's late but less than a day, count as 1 day late
-            
-            penaltyPercentage = Integer.min(daysLate * 10, 100); // Maximum 100% penalty
-            double penaltyPoints = score * (penaltyPercentage / 100.0);
-            finalScore = (int)Math.max(0, score - penaltyPoints);
+            // Check if late submission is allowed for this assignment
+            if (assignment.isLateSubmissionAllowed()) {
+                // Use the assignment's configured penalty percentage
+                penaltyPercentage = assignment.getLatePenaltyPercentage();
+                
+                // Apply the penalty
+                double penaltyRate = penaltyPercentage / 100.0;
+                double penaltyPoints = score * penaltyRate;
+                finalScore = (int)Math.max(0, score - penaltyPoints);
+            } else {
+                // If late submissions are not allowed, you might want to handle this case
+                // For now, we'll use the same logic as other controllers and apply no penalty
+                penaltyPercentage = 0;
+                finalScore = score;
+            }
         }
         
         // Create or update mark
         Mark mark = submission.getMark();
         if (mark == null) {
+            // Create new mark
             mark = new Mark();
             mark.setSubmission(submission);
             mark.setEvaluator(currentUser);
+            
+            mark.setRawMarks(score);
+            mark.setPenaltyPercentage(penaltyPercentage);
+            mark.setFinalMarks(finalScore);
+            mark.setFeedback(feedback);
+            mark.setEvaluatedAt(LocalDateTime.now());
+            
+            markService.saveMark(mark);
+        } else {
+            // Update existing mark
+            markService.updateMark(mark.getId(), score, penaltyPercentage, 
+                                  feedback, currentUser, "Updated via TA evaluation form");
         }
-        
-        mark.setRawMarks(score);
-        mark.setPenaltyPercentage(penaltyPercentage);
-        mark.setFinalMarks(finalScore);
-        mark.setFeedback(feedback);
-        mark.setEvaluatedAt(LocalDateTime.now());
-        
-        markService.saveMark(mark);
         
         return "redirect:/ta-dashboard/course/" + course.getId();
     }

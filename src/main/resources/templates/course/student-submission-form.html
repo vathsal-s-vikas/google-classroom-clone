@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Assignment</title>
+    
+    <!-- CSRF tokens for security -->
+    <meta name="_csrf" th:content="${_csrf?.token}" />
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #fbbc05;
+            --error-color: #ea4335;
+            --success-color: #34a853;
+            --border-color: #e0e0e0;
+            --text-color: #333;
+            --bg-color: #f9f9f9;
+            --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        /* Top Bar Styles */
+        .top-bar {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-text {
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+        
+        .course-name {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Navigation Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 0.5rem;
+            color: #888;
+        }
+        
+        .breadcrumb-current {
+            color: #555;
+            font-weight: 500;
+        }
+        
+        /* Container Styles */
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        /* Form Styles */
+        .submission-form {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .form-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .assignment-info {
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .assignment-info h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .assignment-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .file-upload-container {
+            margin-bottom: 1rem;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(66, 133, 244, 0.05);
+        }
+        
+        #file-list {
+            margin-top: 15px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .file-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .file-size {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .file-remove {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .file-remove:hover {
+            color: var(--error-color);
+            background-color: rgba(217, 48, 37, 0.1);
+        }
+        
+        .btn {
+            padding: 0.7rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3367d6;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(66, 133, 244, 0.1);
+        }
+        
+        .submission-form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--success-color);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            pointer-events: none;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            bottom: 40px;
+        }
+        
+        .toast.error {
+            background-color: var(--error-color);
+        }
+        
+        .late-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .deadline-passed {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="logo-section">
+            <a href="/dashboard/student" style="text-decoration: none; color: inherit;">
+                <div class="logo-text">Classroom</div>
+            </a>
+            <div class="course-name" th:if="${course != null}" th:text="${course.name}">Course Name</div>
+        </div>
+        <div class="avatar" th:if="${currentUser != null}" 
+             th:text="${currentUser.name != null ? #strings.substring(currentUser.name, 0, 1) : 'U'}">U</div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb">
+            <a href="/dashboard/student">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a th:if="${course != null}" th:href="@{/student/course/{courseId}(courseId=${course.id})}" 
+               th:text="${course.name}">Course Name</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Submit Assignment</span>
+        </div>
+        
+        <!-- Submission Form -->
+        <div class="submission-form">
+            <h1 class="form-title">Submit Assignment</h1>
+            
+            <!-- Assignment Info -->
+            <div class="assignment-info" th:if="${assignment != null}">
+                <h2 th:text="${assignment.title}">Assignment Title</h2>
+                <div th:if="${assignment.description}" th:text="${assignment.description}">
+                    Assignment description details...
+                </div>
+                <div class="assignment-meta">
+                    <div>
+                        <i class="fas fa-calendar"></i> 
+                        <span>Due: </span>
+                        <span th:text="${#temporals.format(assignment.deadline, 'MMM dd, yyyy hh:mm a')}">May 15, 2023 11:59 PM</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-award"></i>
+                        <span th:text="${assignment.maxMarks + ' points'}">100 points</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Late Submission Warning -->
+            <div th:if="${assignment != null && #temporals.createNow().isAfter(assignment.deadline) && assignment.lateSubmissionAllowed}" 
+                 class="late-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Late Submission:</strong> This assignment is past its deadline. 
+                <span th:text="'Late submissions will receive a ' + ${assignment.latePenaltyPercentage} + '% penalty, and are accepted for up to ' + ${assignment.maxLateDays} + ' days late.'">
+                    Late submissions will receive a 10% penalty, and are accepted for up to 7 days late.
+                </span>
+            </div>
+            
+            <!-- Deadline Passed Warning -->
+            <div th:if="${assignment != null && #temporals.createNow().isAfter(assignment.deadline) && !assignment.lateSubmissionAllowed}" 
+                 class="deadline-passed">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Warning:</strong> This assignment is past its deadline and late submissions are not allowed.
+                Your submission may not be accepted.
+            </div>
+            
+            <form id="submissionForm">
+                <input type="hidden" id="assignmentId" name="assignmentId" th:value="${assignment != null ? assignment.id : ''}">
+                
+                <div class="form-group">
+                    <label for="submissionText">Submission Notes (Optional)</label>
+                    <textarea id="submissionText" name="submissionText" class="form-control" 
+                              placeholder="Add any comments or notes about your submission here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="attachments">Attachments</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="attachments" name="attachments" multiple style="display: none;" 
+                               onchange="handleFileSelection()">
+                        <div class="file-upload-area" onclick="document.getElementById('attachments').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                            <p>Click to upload files</p>
+                            <p style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">
+                                or drag and drop files here
+                            </p>
+                        </div>
+                        <div id="file-list"></div>
+                    </div>
+                </div>
+                
+                <div class="submission-form-buttons">
+                    <a th:href="@{/student/course/{courseId}(courseId=${course.id})}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Submit Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Assignment submitted successfully!</div>
+    
+    <script>
+        let selectedFiles = [];
+        
+        // Handle file selection
+        function handleFileSelection() {
+            const fileInput = document.getElementById('attachments');
+            const fileList = document.getElementById('file-list');
+            
+            // Store the selected files
+            selectedFiles = Array.from(fileInput.files);
+            
+            // Display the selected files
+            updateFileList();
+        }
+        
+        // Update the file list display
+        function updateFileList() {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-size">${formatFileSize(file.size)}</span>
+                    </div>
+                    <button type="button" class="file-remove" onclick="removeFile(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+        
+        // Remove a file from the selected files
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            
+            if (type === 'error') {
+                toast.classList.add('error');
+            } else {
+                toast.classList.remove('error');
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Handle form submission
+        document.getElementById('submissionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const assignmentId = document.getElementById('assignmentId').value;
+            const submissionText = document.getElementById('submissionText').value;
+            
+            // Create FormData object
+            const formData = new FormData();
+            formData.append('assignmentId', assignmentId);
+            formData.append('submissionText', submissionText);
+            
+            // Add files to FormData
+            selectedFiles.forEach(file => {
+                formData.append('attachments', file);
+            });
+            
+            // Get CSRF tokens
+            const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+            
+            // Show loading state
+            const submitButton = document.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Submitting...';
+            submitButton.disabled = true;
+            
+            // Make API call to submit assignment
+            fetch('/api/submissions/submit', {
+                method: 'POST',
+                headers: {
+                    [header]: token
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to submit assignment');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showToast('Assignment submitted successfully!');
+                
+                // Get the current course ID from URL
+                const pathSegments = window.location.pathname.split('/');
+                const courseId = pathSegments[pathSegments.indexOf('course') + 1];
+                
+                // Redirect to submission view page after successful submission
+                setTimeout(() => {
+                    window.location.href = `/student/course/${courseId}/assignment/${assignmentId}/submission`;
+                }, 1500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(error.message || 'Error submitting assignment', 'error');
+                
+                // Reset button state
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            });
+        });
+        
+        // Set up drag and drop functionality
+        const dropArea = document.querySelector('.file-upload-area');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            // Update the file input with the dropped files
+            // This is a hack since we can't directly set the files property
+            const fileInput = document.getElementById('attachments');
+            
+            // Store the dropped files
+            selectedFiles = Array.from(files);
+            
+            // Update the file list display
+            updateFileList();
+        }
+    </script>
+</body>
+</html> 

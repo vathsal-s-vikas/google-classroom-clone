@@ -29,7 +29,7 @@ public class Content {
     @Column(name = "content_type", nullable = false)
     private ContentType contentType;
 
-    @Column(name = "content_data", columnDefinition = "json")
+    @Column(name = "content_data", columnDefinition = "LONGTEXT")
     private String contentData;
 
     @Column(name = "resource_url")

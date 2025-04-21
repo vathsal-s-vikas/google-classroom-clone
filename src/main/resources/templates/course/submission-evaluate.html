@@ -411,9 +411,27 @@
             </div>
             
             <div class="student-info">
-                <div class="student-avatar" th:text="${#strings.substring(student.name,0,1)}">S</div>
+                <div class="student-avatar" th:if="${submission.student != null}" 
+                     th:text="${#strings.substring(student.name,0,1)}">S</div>
+                     
+                <!-- Team icon for team submissions -->
+                <div class="student-avatar" th:if="${submission.team != null}" style="background-color: #4285F4;">
+                    <i class="fas fa-users"></i>
+                </div>
+                
                 <div class="student-details">
-                    <span class="student-name" th:text="${student.name}">Student Name</span>
+                    <!-- Show student name for individual submissions -->
+                    <span class="student-name" th:if="${submission.student != null}" th:text="${student.name}">Student Name</span>
+                    
+                    <!-- Show team name for team submissions -->
+                    <span class="student-name" th:if="${submission.team != null}">
+                        <span th:text="${submission.team.name}">Team Name</span>
+                        <span th:if="${submission.team.projectTitle != null && !submission.team.projectTitle.isEmpty()}"
+                              style="font-weight: normal; font-size: 0.9rem; margin-left: 0.5rem;">
+                            - <span th:text="${submission.team.projectTitle}">Project Title</span>
+                        </span>
+                    </span>
+                    
                     <div class="submission-meta">
                         <div class="submission-time" 
                              th:text="${'Submitted on ' + #temporals.format(submission.submittedAt, 'MMM dd, yyyy, hh:mm a')}">
@@ -427,6 +445,26 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Team members (only for team submissions) -->
+            <div class="team-members" th:if="${submission.team != null}" 
+                 style="margin-bottom: 1.5rem; background-color: #f8f9fa; padding: 1rem; border-radius: 4px;">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Team Members:</h3>
+                <ul style="list-style-type: none; padding-left: 0; margin-bottom: 0;">
+                    <li th:each="membership : ${submission.team.memberships}" th:if="${membership.accepted}" 
+                        style="margin-bottom: 0.25rem; display: flex; align-items: center;">
+                        <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #ddd; 
+                                    display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
+                            <span th:text="${#strings.substring(membership.student.name,0,1)}">S</span>
+                        </div>
+                        <span th:text="${membership.student.name}">Student Name</span>
+                        <span th:if="${membership.leader}" 
+                              style="font-size: 0.8rem; color: #1a73e8; margin-left: 0.5rem;">
+                            (Team Leader)
+                        </span>
+                    </li>
+                </ul>
             </div>
             
             <div class="submission-details">
@@ -471,12 +509,16 @@
                         <span class="score-separator">/</span>
                         <span class="max-score" th:text="${assignment.maxMarks}">100</span>
                     </div>
+                    <!-- Add penalty note for late submissions -->
+                    <div class="penalty-note" th:if="${submission.isLate && assignment.lateSubmissionAllowed}" style="margin-top: 8px; font-size: 0.9rem; color: #d93025;">
+                        <i class="fas fa-info-circle"></i>
+                        <span>A <strong th:text="${assignment.latePenaltyPercentage + '%'}">10%</strong> penalty will be automatically applied to this late submission.</span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="feedback" class="form-label">Feedback</label>
                     <textarea id="feedback" name="feedback" class="form-control" 
-                              th:text="${submission.mark != null ? submission.mark.feedback : ''}">
-                    </textarea>
+                              th:text="${submission.mark != null ? submission.mark.feedback : ''}"></textarea>
                 </div>
                 <div class="actions">
                     <a th:href="@{/teacher/course/{courseId}/assignment/{assignmentId}(courseId=${course.id}, assignmentId=${assignment.id})}" class="button button-outline">Cancel</a>

@@ -1,6 +1,7 @@
 package com.classroom.security;
 
 import com.classroom.model.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,14 +10,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Getter
 public class CustomUserDetails implements UserDetails {
 
+    // Important: provide access to the actual User entity
     private final User user;
-    
+
     public CustomUserDetails(User user) {
         this.user = user;
     }
-    
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -55,9 +58,5 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return user.isActive();
     }
-    
-    // Important: provide access to the actual User entity
-    public User getUser() {
-        return user;
-    }
+
 } 

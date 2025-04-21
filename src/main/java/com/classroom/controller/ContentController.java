@@ -11,13 +11,20 @@ import com.classroom.service.ContentService;
 import com.classroom.service.CourseService;
 import com.classroom.repository.UserRepository;
 import com.classroom.repository.CourseMembershipRepository;
+import com.classroom.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -28,7 +35,9 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/content")
+@PreAuthorize("hasAnyRole('TEACHER', 'TA')")
 public class ContentController {
+    private static final Logger logger = LoggerFactory.getLogger(ContentController.class);
 
     @Autowired
     private ContentService contentService;
@@ -43,12 +52,34 @@ public class ContentController {
     private CourseMembershipRepository courseMembershipRepository;
     
     /**
-     * Get current authenticated user from OAuth2 authentication
+     * Get current authenticated user from various authentication methods
      */
-    private User getCurrentUser(OAuth2User principal) {
-        String email = principal.getAttribute("email");
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            throw new RuntimeException("No authentication found");
+        }
+        
+        Object principal = auth.getPrincipal();
+        
+        if (principal instanceof CustomUserDetails) {
+            return ((CustomUserDetails) principal).getUser();
+        } else if (principal instanceof UserDetails) {
+            final String username = ((UserDetails) principal).getUsername();
+            return userRepository.findByEmail(username)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + username));
+        } else if (principal instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) principal;
+            String email = oauth2User.getAttribute("email");
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        } else if (principal instanceof String) {
+            String username = (String) principal;
+            return userRepository.findByEmail(username)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + username));
+        } else {
+            throw new RuntimeException("Unsupported principal type: " + principal.getClass().getName());
+        }
     }
     
     /**
@@ -67,12 +98,31 @@ public class ContentController {
     }
     
     /**
+     * Check if a user is a TA of a course
+     */
+    private boolean isUserTAOfCourse(User user, Course course) {
+        List<CourseMembership> memberships = courseMembershipRepository.findByUserAndCourseAndRole(user, course, UserType.TA);
+        return !memberships.isEmpty();
+    }
+    
+    /**
+     * Check if a user can manage content (teacher or TA)
+     */
+    private boolean canUserManageContent(User user, Course course) {
+        boolean canManage = isUserTeacherOfCourse(user, course) || isUserTAOfCourse(user, course);
+        if (!canManage) {
+            logger.warn("Unauthorized access attempt to content management: User {} tried to manage content for course {}", 
+                         user.getEmail(), course.getId());
+        }
+        return canManage;
+    }
+    
+    /**
      * Get all content for a course
      */
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<?> getContentByCourse(@PathVariable Long courseId,
-                                              @AuthenticationPrincipal OAuth2User principal) {
-        User currentUser = getCurrentUser(principal);
+    public ResponseEntity<?> getContentByCourse(@PathVariable Long courseId) {
+        User currentUser = getCurrentUser();
         Course course = courseService.getCourseById(courseId);
         
         // Check if the user is a member of the course
@@ -81,8 +131,8 @@ public class ContentController {
                     .body(Map.of("error", "You are not a member of this course"));
         }
         
-        // If user is a teacher, return all content
-        if (isUserTeacherOfCourse(currentUser, course)) {
+        // If user is a teacher or TA, return all content
+        if (canUserManageContent(currentUser, course)) {
             return ResponseEntity.ok(contentService.getContentByCourse(course));
         } else {
             // If user is a student, return only visible content
@@ -94,9 +144,8 @@ public class ContentController {
      * Get content by ID
      */
     @GetMapping("/{contentId}")
-    public ResponseEntity<?> getContentById(@PathVariable Long contentId,
-                                          @AuthenticationPrincipal OAuth2User principal) {
-        User currentUser = getCurrentUser(principal);
+    public ResponseEntity<?> getContentById(@PathVariable Long contentId) {
+        User currentUser = getCurrentUser();
         Optional<Content> contentOpt = contentService.getContentById(contentId);
         
         if (!contentOpt.isPresent()) {
@@ -113,9 +162,9 @@ public class ContentController {
                     .body(Map.of("error", "You are not a member of this course"));
         }
         
-        // If content is not visible and user is not a teacher, don't allow access
+        // If content is not visible and user is not a teacher or TA, don't allow access
         if (content.getVisibility() != ContentVisibility.VISIBLE && 
-            !isUserTeacherOfCourse(currentUser, course)) {
+            !canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "This content is not available"));
         }
@@ -132,16 +181,15 @@ public class ContentController {
             @RequestParam String title,
             @RequestParam(required = false) String description,
             @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
+            @RequestParam(required = false) LocalDateTime scheduledFor) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Course course = courseService.getCourseById(courseId);
         
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
+        // Check if user is a teacher or TA of the course
+        if (!canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can create announcements"));
+                    .body(Map.of("error", "Only teachers and TAs can create announcements"));
         }
         
         try {
@@ -165,16 +213,15 @@ public class ContentController {
             @RequestParam(required = false) String description,
             @RequestParam("file") MultipartFile file,
             @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
+            @RequestParam(required = false) LocalDateTime scheduledFor) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Course course = courseService.getCourseById(courseId);
         
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
+        // Check if user is a teacher or TA of the course
+        if (!canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can upload documents"));
+                    .body(Map.of("error", "Only teachers and TAs can upload documents"));
         }
         
         try {
@@ -198,16 +245,15 @@ public class ContentController {
             @RequestParam(required = false) String description,
             @RequestParam String resourceUrl,
             @RequestParam ContentVisibility visibility,
-            @RequestParam(required = false) LocalDateTime scheduledFor,
-            @AuthenticationPrincipal OAuth2User principal) {
+            @RequestParam(required = false) LocalDateTime scheduledFor) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Course course = courseService.getCourseById(courseId);
         
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
+        // Check if user is a teacher or TA of the course
+        if (!canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can add links"));
+                    .body(Map.of("error", "Only teachers and TAs can add links"));
         }
         
         try {
@@ -234,13 +280,13 @@ public class ContentController {
             @RequestParam(required = false) LocalDateTime scheduledFor,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Course course = courseService.getCourseById(courseId);
         
-        // Check if user is a teacher of the course
-        if (!isUserTeacherOfCourse(currentUser, course)) {
+        // Check if user is a teacher or TA of the course
+        if (!canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only teachers can add videos"));
+                    .body(Map.of("error", "Only teachers and TAs can add videos"));
         }
         
         try {
@@ -267,7 +313,7 @@ public class ContentController {
             @RequestParam(required = false) LocalDateTime scheduledFor,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Optional<Content> contentOpt = contentService.getContentById(contentId);
         
         if (!contentOpt.isPresent()) {
@@ -278,9 +324,9 @@ public class ContentController {
         Content content = contentOpt.get();
         Course course = content.getCourse();
         
-        // Check if user is the uploader or a teacher of the course
+        // Check if user is the uploader or a teacher/TA of the course
         if (!content.getUploader().equals(currentUser) && 
-            !isUserTeacherOfCourse(currentUser, course)) {
+            !canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "You don't have permission to update this content"));
         }
@@ -309,7 +355,7 @@ public class ContentController {
             @RequestParam(required = false) LocalDateTime scheduledFor,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Optional<Content> contentOpt = contentService.getContentById(contentId);
         
         if (!contentOpt.isPresent()) {
@@ -320,9 +366,9 @@ public class ContentController {
         Content content = contentOpt.get();
         Course course = content.getCourse();
         
-        // Check if user is the uploader or a teacher of the course
+        // Check if user is the uploader or a teacher/TA of the course
         if (!content.getUploader().equals(currentUser) && 
-            !isUserTeacherOfCourse(currentUser, course)) {
+            !canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "You don't have permission to update this content"));
         }
@@ -346,7 +392,7 @@ public class ContentController {
             @PathVariable Long contentId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Optional<Content> contentOpt = contentService.getContentById(contentId);
         
         if (!contentOpt.isPresent()) {
@@ -357,9 +403,9 @@ public class ContentController {
         Content content = contentOpt.get();
         Course course = content.getCourse();
         
-        // Check if user is the uploader or a teacher of the course
+        // Check if user is the uploader or a teacher/TA of the course
         if (!content.getUploader().equals(currentUser) && 
-            !isUserTeacherOfCourse(currentUser, course)) {
+            !canUserManageContent(currentUser, course)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "You don't have permission to delete this content"));
         }
@@ -381,7 +427,7 @@ public class ContentController {
             @PathVariable Long courseId,
             @AuthenticationPrincipal OAuth2User principal) {
         
-        User currentUser = getCurrentUser(principal);
+        User currentUser = getCurrentUser();
         Course course = courseService.getCourseById(courseId);
         
         // Check if user is a member of the course

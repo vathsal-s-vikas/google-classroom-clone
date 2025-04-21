@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final UserService appUserService;
@@ -54,7 +56,14 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
+                    // Public routes
                     registry.requestMatchers("/", "/signup", "/req/signup", "/select-role", "/assign-role", "/debug/**", "/css/**", "/js/**", "/login", "/oauth2/**").permitAll();
+                    
+                    // Course content creation - restricted to TEACHER and TA roles only
+                    registry.requestMatchers("/api/content", "/api/content/**")
+                           .hasAnyRole("TEACHER", "TA");
+                    
+                    // All other API endpoints require authentication
                     registry.requestMatchers("/api/**").authenticated();
                     registry.requestMatchers("/dashboard/**").authenticated();
                     registry.requestMatchers("/test-course-creation").authenticated();

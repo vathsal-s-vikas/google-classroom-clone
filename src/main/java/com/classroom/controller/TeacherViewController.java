@@ -2,6 +2,7 @@ package com.classroom.controller;
 
 import com.classroom.model.Assignment;
 import com.classroom.model.Course;
+import com.classroom.model.Mark;
 import com.classroom.model.Submission;
 import com.classroom.model.User;
 import com.classroom.repository.UserRepository;
@@ -143,8 +144,16 @@ public class TeacherViewController {
             penaltyPercentage = submission.getAssignment().getLatePenaltyPercentage();
         }
         
-        // Create mark using MarkService
-        markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+        // Check if mark already exists
+        Mark existingMark = submission.getMark();
+        if (existingMark != null) {
+            // Update existing mark
+            markService.updateMark(existingMark.getId(), score, penaltyPercentage, 
+                                  feedback, currentUser, "Updated via evaluation form");
+        } else {
+            // Create new mark
+            markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+        }
         
         return "redirect:/teacher/course/" + course.getId() + "/assignment/" + submission.getAssignment().getId();
     }
@@ -231,8 +240,16 @@ public class TeacherViewController {
                             penaltyPercentage = assignment.getLatePenaltyPercentage();
                         }
                         
-                        // Create mark using MarkService
-                        markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+                        // Check if mark already exists
+                        Mark existingMark = submission.getMark();
+                        if (existingMark != null) {
+                            // Update existing mark
+                            markService.updateMark(existingMark.getId(), score, penaltyPercentage, 
+                                                 feedback, currentUser, "Updated via batch evaluation");
+                        } else {
+                            // Create new mark
+                            markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+                        }
                     }
                 } catch (NumberFormatException e) {
                     // Skip invalid numbers

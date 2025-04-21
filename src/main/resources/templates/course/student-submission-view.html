@@ -319,10 +319,20 @@
                 <h1 class="assignment-title" th:unless="${assignment != null}">Assignment</h1>
                 <!-- Graded submission -->
                 <div class="assignment-score" th:if="${submission != null && submission.isEvaluated}">
-                    <span class="score-value" th:text="${submission.mark != null && submission.mark.rawMarks != null ? submission.mark.rawMarks + '/' + assignment.maxMarks : 'Not graded'}">
+                    <span class="score-value" th:text="${submission.mark != null && submission.mark.finalMarks != null ? submission.mark.finalMarks + '/' + assignment.maxMarks : 'Not graded'}">
                         90/100
                     </span>
                     <span class="status-badge status-graded">Graded</span>
+                    
+                    <!-- Display raw score and penalty info for late submissions with penalty -->
+                    <div th:if="${submission.isLate && submission.mark != null && submission.mark.penaltyPercentage > 0}" 
+                         style="font-size: 0.85rem; color: #d93025; margin-top: 5px;">
+                        <span>Raw score: </span>
+                        <span th:text="${submission.mark.rawMarks + '/' + assignment.maxMarks}">100/100</span>
+                        <span> (</span>
+                        <span th:text="${submission.mark.penaltyPercentage + '% penalty applied'}">10% penalty applied</span>
+                        <span>)</span>
+                    </div>
                 </div>
                 <!-- Ungraded submission -->
                 <div class="assignment-score" th:if="${submission != null && !submission.isEvaluated}">

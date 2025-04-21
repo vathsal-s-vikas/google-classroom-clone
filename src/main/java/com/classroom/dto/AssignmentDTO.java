@@ -1,6 +1,7 @@
 package com.classroom.dto;
 
 import com.classroom.model.Assignment;
+import com.classroom.model.GroupAssignment;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,9 @@ public class AssignmentDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
+    // Group assignment details
+    private GroupAssignmentDTO groupAssignment;
+    
     public static AssignmentDTO fromEntity(Assignment assignment) {
         AssignmentDTO dto = new AssignmentDTO();
         dto.setId(assignment.getId());
@@ -44,6 +48,32 @@ public class AssignmentDTO {
         dto.setMaxLateDays(assignment.getMaxLateDays());
         dto.setCreatedAt(assignment.getCreatedAt());
         dto.setUpdatedAt(assignment.getUpdatedAt());
+        
+        // Set group assignment if available
+        if (assignment.getGroupAssignment() != null) {
+            dto.setGroupAssignment(GroupAssignmentDTO.fromEntity(assignment.getGroupAssignment()));
+        }
+        
         return dto;
+    }
+    
+    // Inner class for GroupAssignment details
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GroupAssignmentDTO {
+        private Integer minTeamSize;
+        private Integer maxTeamSize;
+        private boolean allowSelfFormingTeams;
+        private boolean requireProjectTitle;
+        
+        public static GroupAssignmentDTO fromEntity(GroupAssignment groupAssignment) {
+            GroupAssignmentDTO dto = new GroupAssignmentDTO();
+            dto.setMinTeamSize(groupAssignment.getMinTeamSize());
+            dto.setMaxTeamSize(groupAssignment.getMaxTeamSize());
+            dto.setAllowSelfFormingTeams(groupAssignment.isAllowSelfFormingTeams());
+            dto.setRequireProjectTitle(groupAssignment.isRequireProjectTitle());
+            return dto;
+        }
     }
 } 

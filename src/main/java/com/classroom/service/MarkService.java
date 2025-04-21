@@ -201,12 +201,23 @@ public class MarkService {
      * Calculate final marks after applying penalty
      */
     private Integer calculateFinalMarks(Integer rawMarks, Integer penaltyPercentage) {
-        if (rawMarks == null || penaltyPercentage == null || penaltyPercentage < 0) {
+        if (rawMarks == null || penaltyPercentage == null || penaltyPercentage <= 0) {
             return rawMarks;
         }
         
-        double penalty = (penaltyPercentage / 100.0) * rawMarks;
-        return (int) Math.max(0, rawMarks - penalty);
+        // Use double for calculation to avoid integer division issues
+        double penaltyRate = penaltyPercentage / 100.0;
+        double penalty = penaltyRate * rawMarks;
+        int finalMarks = (int) Math.max(0, rawMarks - penalty);
+        
+        // Log the calculation for debugging
+        System.out.println("Mark calculation - Raw marks: " + rawMarks + 
+                           ", Penalty %: " + penaltyPercentage + 
+                           ", Penalty rate: " + penaltyRate +
+                           ", Penalty amount: " + penalty + 
+                           ", Final marks: " + finalMarks);
+        
+        return finalMarks;
     }
     
     /**

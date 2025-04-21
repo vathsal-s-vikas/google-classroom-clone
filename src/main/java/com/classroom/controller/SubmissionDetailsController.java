@@ -24,27 +24,27 @@ import java.util.Optional;
 public class SubmissionDetailsController {
 
     @Autowired
-    private SubmissionService submissionService;
-    
-    @Autowired
-    private SubmissionAttachmentService attachmentService;
-    
-    @Autowired
-    private AssignmentService assignmentService;
-
-    @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private CustomAuthenticationConverter authConverter;
-    
+
+    @Autowired
+    private SubmissionService submissionService;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private SubmissionAttachmentService attachmentService;
+
     private User getCurrentUser() {
         // First convert the authentication if needed
         authConverter.convertAuthentication();
         
         // Get the updated authentication
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = auth.getPrincipal();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = authentication.getPrincipal();
         
         if (principal instanceof CustomUserDetails) {
             return ((CustomUserDetails) principal).getUser();
@@ -61,6 +61,52 @@ public class SubmissionDetailsController {
         } else {
             throw new RuntimeException("Unsupported principal type: " + principal.getClass().getName());
         }
+    }
+    
+    /**
+     * Handles the page for submitting a new assignment
+     */
+    @GetMapping("/student/course/{courseId}/assignment/{assignmentId}/submit")
+    public String showSubmitAssignmentForm(
+            @PathVariable Long courseId,
+            @PathVariable Long assignmentId,
+            Model model) {
+        
+        User currentUser = getCurrentUser();
+        
+        // Get the assignment
+        Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+        
+        // Check if the assignment belongs to the specified course
+        if (!assignment.getCourse().getId().equals(courseId)) {
+            return "redirect:/dashboard/student";
+        }
+        
+        // Check if student is enrolled in the course
+        boolean isEnrolled = assignment.getCourse().getMemberships().stream()
+                .anyMatch(membership -> 
+                        membership.getUser().getId().equals(currentUser.getId()) && 
+                        membership.getRole() == UserType.STUDENT);
+        
+        if (!isEnrolled) {
+            return "redirect:/dashboard/student";
+        }
+        
+        // Check if student has already submitted
+        Optional<Submission> existingSubmission = 
+                submissionService.getSubmissionByAssignmentAndStudent(assignment, currentUser);
+        
+        if (existingSubmission.isPresent()) {
+            // Already submitted, redirect to view submission
+            return "redirect:/student/course/" + courseId + "/assignment/" + assignmentId + "/submission";
+        }
+        
+        // Add data to model
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("course", assignment.getCourse());
+        model.addAttribute("assignment", assignment);
+        
+        return "course/student-submission-form";
     }
 
     @GetMapping("/student/course/{courseId}/assignment/{assignmentId}/submission")

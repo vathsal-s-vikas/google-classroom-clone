@@ -11,9 +11,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -353,5 +355,317 @@ public class TeamController {
         }
         
         return ResponseEntity.ok(team);
+    }
+
+    /**
+     * Get the current user's team status for a specific assignment
+     */
+    @GetMapping("/my-team/{assignmentId}")
+    public ResponseEntity<?> getMyTeamForAssignment(
+            @PathVariable Long assignmentId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        try {
+            User currentUser = getCurrentUser(principal);
+            Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+            
+            // Verify the assignment is a group assignment
+            if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP || assignment.getGroupAssignment() == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "This is not a group assignment"
+                ));
+            }
+            
+            // Get the student's team for this assignment
+            Team team = teamService.getTeamForStudentAndAssignment(currentUser, assignmentId);
+            
+            // Get pending invitations for this student for this assignment
+            List<TeamMembership> pendingInvitations = teamService.getPendingInvitationsForStudent(currentUser).stream()
+                    .filter(invitation -> invitation.getTeam().getAssignment().getAssignmentId().equals(assignmentId))
+                    .collect(Collectors.toList());
+            
+            // Return the team details and pending invitations
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            
+            if (team != null) {
+                // Student is in a team
+                response.put("status", "IN_TEAM");
+                response.put("team", team);
+                
+                // Also include team members
+                List<TeamMembership> members = teamService.getAcceptedTeamMembers(team.getId());
+                response.put("members", members);
+            } else if (!pendingInvitations.isEmpty()) {
+                // Student has pending invitations
+                response.put("status", "HAS_INVITATIONS");
+                response.put("pendingInvitations", pendingInvitations);
+            } else {
+                // Student is not in a team yet
+                response.put("status", "NO_TEAM");
+                
+                // Include assignment details for team formation
+                GroupAssignment groupAssignment = assignment.getGroupAssignment();
+                response.put("groupAssignment", groupAssignment);
+                
+                // Include all existing teams if self-forming teams are allowed
+                if (groupAssignment.isAllowSelfFormingTeams()) {
+                    List<Team> teams = teamService.getTeamsByAssignment(groupAssignment);
+                    response.put("availableTeams", teams);
+                }
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error getting team status: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Create a new team for a group assignment (student view)
+     */
+    @PostMapping("/create-team/{assignmentId}")
+    public ResponseEntity<?> createTeamAsStudent(
+            @PathVariable Long assignmentId,
+            @RequestBody Map<String, String> teamData,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        try {
+            User currentUser = getCurrentUser(principal);
+            Assignment assignment = assignmentService.getAssignmentById(assignmentId);
+            
+            // Verify the assignment is a group assignment
+            if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP || assignment.getGroupAssignment() == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "This is not a group assignment"
+                ));
+            }
+            
+            GroupAssignment groupAssignment = assignment.getGroupAssignment();
+            
+            // Check if self-forming teams are allowed
+            if (!groupAssignment.isAllowSelfFormingTeams()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Students are not allowed to create teams for this assignment"
+                ));
+            }
+            
+            // Check if student is already in a team for this assignment
+            Team existingTeam = teamService.getTeamForStudentAndAssignment(currentUser, assignmentId);
+            if (existingTeam != null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "You are already in a team for this assignment"
+                ));
+            }
+            
+            // Get team details from request
+            String teamName = teamData.get("name");
+            String projectTitle = teamData.get("projectTitle");
+            
+            if (teamName == null || teamName.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Team name is required"
+                ));
+            }
+            
+            // Check if project title is required
+            if (groupAssignment.isRequireProjectTitle() && (projectTitle == null || projectTitle.trim().isEmpty())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Project title is required"
+                ));
+            }
+            
+            // Create the team
+            Team team = teamService.createTeam(groupAssignment, teamName, projectTitle, currentUser);
+            
+            return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "message", "Team created successfully",
+                "team", team
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error creating team: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Request to join an existing team
+     */
+    @PostMapping("/join-team/{teamId}")
+    public ResponseEntity<?> requestToJoinTeam(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        try {
+            User currentUser = getCurrentUser(principal);
+            Team team = teamService.getTeamById(teamId);
+            
+            // Verify the assignment is a group assignment
+            Assignment assignment = assignmentService.getAssignmentById(team.getAssignment().getAssignmentId());
+            if (assignment.getAssignmentType() != Assignment.AssignmentType.GROUP) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "This is not a group assignment"
+                ));
+            }
+            
+            // Check if student is already in a team for this assignment
+            Team existingTeam = teamService.getTeamForStudentAndAssignment(currentUser, assignment.getId());
+            if (existingTeam != null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "You are already in a team for this assignment"
+                ));
+            }
+            
+            // Check if team has reached maximum size
+            long currentMemberCount = teamService.getAcceptedTeamMembers(team.getId()).size();
+            if (currentMemberCount >= team.getAssignment().getMaxTeamSize()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Team has reached maximum size"
+                ));
+            }
+            
+            // Create a join request (this will add the student to the team with accepted=false)
+            TeamMembership membership = new TeamMembership();
+            membership.setTeam(team);
+            membership.setStudent(currentUser);
+            membership.setLeader(false);
+            membership.setAccepted(false);
+            teamService.saveTeamMembership(membership);
+            
+            return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "message", "Join request sent successfully"
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error joining team: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Accept an invitation to join a team
+     */
+    @PostMapping("/accept-invitation/{membershipId}")
+    public ResponseEntity<?> acceptInvitation(
+            @PathVariable Long membershipId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        try {
+            User currentUser = getCurrentUser(principal);
+            
+            // Get the membership
+            Optional<TeamMembership> membershipOpt = teamService.getMembershipById(membershipId);
+            if (!membershipOpt.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Invitation not found"
+                ));
+            }
+            
+            TeamMembership membership = membershipOpt.get();
+            
+            // Verify the invitation belongs to the current user
+            if (!membership.getStudent().getId().equals(currentUser.getId())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "This invitation does not belong to you"
+                ));
+            }
+            
+            // Check if student is already in a team for this assignment
+            Team existingTeam = teamService.getTeamForStudentAndAssignment(
+                    currentUser, 
+                    membership.getTeam().getAssignment().getAssignmentId());
+                    
+            if (existingTeam != null && !existingTeam.getId().equals(membership.getTeam().getId())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "You are already in a different team for this assignment"
+                ));
+            }
+            
+            // Accept the invitation
+            membership.setAccepted(true);
+            membership.setJoinedAt(new Date());
+            teamService.saveTeamMembership(membership);
+            
+            return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "message", "You have joined the team",
+                "team", membership.getTeam()
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error accepting invitation: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Decline an invitation to join a team
+     */
+    @PostMapping("/decline-invitation/{membershipId}")
+    public ResponseEntity<?> declineInvitation(
+            @PathVariable Long membershipId,
+            @AuthenticationPrincipal OAuth2User principal) {
+        
+        try {
+            User currentUser = getCurrentUser(principal);
+            
+            // Get the membership
+            Optional<TeamMembership> membershipOpt = teamService.getMembershipById(membershipId);
+            if (!membershipOpt.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Invitation not found"
+                ));
+            }
+            
+            TeamMembership membership = membershipOpt.get();
+            
+            // Verify the invitation belongs to the current user
+            if (!membership.getStudent().getId().equals(currentUser.getId())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "This invitation does not belong to you"
+                ));
+            }
+            
+            // Delete the membership (decline the invitation)
+            teamService.deleteTeamMembership(membership.getId());
+            
+            return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "message", "Invitation declined"
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error declining invitation: " + e.getMessage()
+            ));
+        }
     }
 } 

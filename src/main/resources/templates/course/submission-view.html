@@ -276,10 +276,20 @@
             <div class="assignment-header">
                 <h1 class="assignment-title" th:text="${assignment.title}">Assignment Title</h1>
                 <div class="assignment-score" th:if="${submission.isEvaluated}">
-                    <span class="score-value" th:text="${submission.mark != null ? submission.mark.score + '/' + assignment.totalScore : 'Not graded'}">
+                    <span class="score-value" th:text="${submission.mark != null ? submission.mark.finalMarks + '/' + assignment.maxMarks : 'Not graded'}">
                         90/100
                     </span>
                     <span class="status-badge status-graded">Graded</span>
+                    
+                    <!-- Display raw score and penalty info for late submissions -->
+                    <div th:if="${submission.isLate && submission.mark != null && submission.mark.penaltyPercentage > 0}" 
+                         style="font-size: 0.85rem; color: #d93025; margin-top: 5px;">
+                        <span>Raw score: </span>
+                        <span th:text="${submission.mark.rawMarks + '/' + assignment.maxMarks}">100/100</span>
+                        <span> (</span>
+                        <span th:text="${submission.mark.penaltyPercentage + '% penalty applied'}">10% penalty applied</span>
+                        <span>)</span>
+                    </div>
                 </div>
                 <div class="assignment-score" th:unless="${submission.isEvaluated}">
                     <span class="status-badge" th:classappend="${submission.isLate ? 'status-late' : 'status-submitted'}" 
@@ -292,15 +302,30 @@
             <div class="submission-details">
                 <div class="detail-row">
                     <span class="detail-label">Due Date:</span>
-                    <span th:text="${#dates.format(assignment.dueDate, 'MMM dd, yyyy, hh:mm a')}">May 15, 2023, 11:59 PM</span>
+                    <span th:text="${#temporals.format(assignment.deadline, 'MMM dd, yyyy, hh:mm a')}">May 15, 2023, 11:59 PM</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Submitted On:</span>
-                    <span th:text="${#dates.format(submission.submittedAt, 'MMM dd, yyyy, hh:mm a')}">May 14, 2023, 10:30 PM</span>
+                    <span th:text="${#temporals.format(submission.submittedAt, 'MMM dd, yyyy, hh:mm a')}">May 14, 2023, 10:30 PM</span>
                 </div>
                 <div class="detail-row" th:if="${submission.isLate}">
                     <span class="detail-label">Days Late:</span>
                     <span th:text="${submission.daysLate}">1</span>
+                </div>
+                
+                <!-- Team information (only for team submissions) -->
+                <div class="detail-row" th:if="${submission.team != null}">
+                    <span class="detail-label">Team:</span>
+                    <span th:text="${submission.team.name}">Team Name</span>
+                </div>
+                <div class="team-members" th:if="${submission.team != null}" style="margin-top: 0.5rem;">
+                    <span class="detail-label">Team Members:</span>
+                    <ul style="list-style-type: none; padding-left: 1rem; margin-top: 0.5rem;">
+                        <li th:each="membership : ${submission.team.memberships}" th:if="${membership.accepted}" style="margin-bottom: 0.25rem;">
+                            <span th:text="${membership.student.name}">Student Name</span>
+                            <span th:if="${membership.leader}" style="font-size: 0.8rem; color: #1a73e8; margin-left: 0.5rem;">(Team Leader)</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
             

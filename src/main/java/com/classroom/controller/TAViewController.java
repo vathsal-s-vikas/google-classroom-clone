@@ -302,7 +302,7 @@ public class TAViewController {
         
         // Get the submission
         Submission submission = submissionService.getSubmissionById(submissionId)
-                .orElseThrow(() -> new RuntimeException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
         
         // Get the course
         Course course = submission.getAssignment().getCourse();
@@ -315,20 +315,22 @@ public class TAViewController {
             return "redirect:/ta-view/dashboard";
         }
         
-        // Ensure score is within assignment max score
-        Integer maxMarks = submission.getAssignment().getMaxMarks();
-        if (score > maxMarks) {
-            score = maxMarks;
-        }
-        
-        // Calculate penalty if submission is late
+        // Calculate penalty if late submission
         Integer penaltyPercentage = 0;
         if (submission.isLate() && submission.getAssignment().isLateSubmissionAllowed()) {
             penaltyPercentage = submission.getAssignment().getLatePenaltyPercentage();
         }
         
-        // Create mark using MarkService
-        markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+        // Check if mark already exists
+        Mark existingMark = submission.getMark();
+        if (existingMark != null) {
+            // Update existing mark
+            markService.updateMark(existingMark.getId(), score, penaltyPercentage, 
+                                 feedback, currentUser, "Updated via TA evaluation form");
+        } else {
+            // Create new mark
+            markService.createMark(submission, score, penaltyPercentage, feedback, currentUser);
+        }
         
         return "redirect:/ta-view/course/" + course.getId() + "/assignment/" + submission.getAssignment().getId();
     }
@@ -422,8 +424,16 @@ public class TAViewController {
                                 penaltyPercentage = submission.getAssignment().getLatePenaltyPercentage();
                             }
                             
-                            // Create mark
-                            markService.createMark(submission, adjustedScore, penaltyPercentage, feedback, currentUser);
+                            // Check if mark already exists
+                            Mark existingMark = submission.getMark();
+                            if (existingMark != null) {
+                                // Update existing mark
+                                markService.updateMark(existingMark.getId(), adjustedScore, penaltyPercentage, 
+                                                     feedback, currentUser, "Updated via TA batch evaluation");
+                            } else {
+                                // Create new mark
+                                markService.createMark(submission, adjustedScore, penaltyPercentage, feedback, currentUser);
+                            }
                         });
                     } catch (NumberFormatException e) {
                         // Skip invalid scores

@@ -4,6 +4,7 @@ import com.classroom.dto.AssignmentDTO;
 import com.classroom.model.Assignment;
 import com.classroom.model.AssignmentAttachment;
 import com.classroom.model.Course;
+import com.classroom.model.GroupAssignment;
 import com.classroom.model.Submission;
 import com.classroom.model.User;
 import com.classroom.repository.UserRepository;
@@ -13,12 +14,15 @@ import com.classroom.service.AssignmentAttachmentService;
 import com.classroom.service.AssignmentService;
 import com.classroom.service.CourseService;
 import com.classroom.service.SubmissionService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +55,9 @@ public class AssignmentController {
 
     @Autowired
     private SubmissionService submissionService;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private User getCurrentUser() {
         // First convert the authentication if needed
@@ -78,6 +85,7 @@ public class AssignmentController {
     }
 
     @PostMapping("/create")
+    @Transactional
     public ResponseEntity<?> createAssignment(@RequestBody Map<String, Object> assignmentData) {
         try {
             User currentUser = getCurrentUser();
@@ -135,6 +143,45 @@ public class AssignmentController {
             
             // Save the assignment
             Assignment savedAssignment = assignmentService.createAssignment(assignment);
+            
+            // If this is a group assignment, create the GroupAssignment record
+            if (Assignment.AssignmentType.GROUP.equals(savedAssignment.getAssignmentType())) {
+                // Extract team settings
+                Integer maxTeamSize = null;
+                Integer minTeamSize = null;
+                Boolean allowSelfFormingTeams = true;
+                Boolean requireProjectTitle = false;
+                
+                if (assignmentData.containsKey("teamSize") && assignmentData.get("teamSize") != null) {
+                    maxTeamSize = Integer.parseInt(assignmentData.get("teamSize").toString());
+                } else {
+                    maxTeamSize = 4; // Default value
+                }
+                
+                if (assignmentData.containsKey("minTeamSize") && assignmentData.get("minTeamSize") != null) {
+                    minTeamSize = Integer.parseInt(assignmentData.get("minTeamSize").toString());
+                } else {
+                    minTeamSize = 2; // Default value
+                }
+                
+                if (assignmentData.containsKey("allowStudentsToCreateTeams") && assignmentData.get("allowStudentsToCreateTeams") != null) {
+                    allowSelfFormingTeams = Boolean.parseBoolean(assignmentData.get("allowStudentsToCreateTeams").toString());
+                }
+                
+                // Create and save GroupAssignment
+                GroupAssignment groupAssignment = new GroupAssignment();
+                groupAssignment.setAssignment(savedAssignment);
+                groupAssignment.setMaxTeamSize(maxTeamSize);
+                groupAssignment.setMinTeamSize(minTeamSize);
+                groupAssignment.setAllowSelfFormingTeams(allowSelfFormingTeams);
+                groupAssignment.setRequireProjectTitle(requireProjectTitle);
+                
+                // Save the group assignment properties
+                entityManager.persist(groupAssignment);
+                
+                // Set the relationship back to the assignment
+                savedAssignment.setGroupAssignment(groupAssignment);
+            }
             
             return ResponseEntity.ok().body(Map.of(
                 "success", true,
@@ -296,6 +343,7 @@ public class AssignmentController {
     }
     
     @PutMapping("/{assignmentId}/update")
+    @Transactional
     public ResponseEntity<?> updateAssignment(
             @PathVariable Long assignmentId,
             @RequestBody Map<String, Object> assignmentData) {
@@ -351,6 +399,53 @@ public class AssignmentController {
             } else {
                 assignment.setLatePenaltyPercentage(null);
                 assignment.setMaxLateDays(null);
+            }
+            
+            // Handle group assignment properties
+            if (Assignment.AssignmentType.GROUP.equals(assignment.getAssignmentType())) {
+                // Extract team settings
+                Integer maxTeamSize = null;
+                Integer minTeamSize = null;
+                Boolean allowSelfFormingTeams = true;
+                Boolean requireProjectTitle = false;
+                
+                if (assignmentData.containsKey("teamSize") && assignmentData.get("teamSize") != null) {
+                    maxTeamSize = Integer.parseInt(assignmentData.get("teamSize").toString());
+                } else {
+                    maxTeamSize = 4; // Default value
+                }
+                
+                if (assignmentData.containsKey("minTeamSize") && assignmentData.get("minTeamSize") != null) {
+                    minTeamSize = Integer.parseInt(assignmentData.get("minTeamSize").toString());
+                } else {
+                    minTeamSize = 2; // Default value
+                }
+                
+                if (assignmentData.containsKey("allowStudentsToCreateTeams") && assignmentData.get("allowStudentsToCreateTeams") != null) {
+                    allowSelfFormingTeams = Boolean.parseBoolean(assignmentData.get("allowStudentsToCreateTeams").toString());
+                }
+                
+                // Update or create GroupAssignment
+                GroupAssignment groupAssignment = assignment.getGroupAssignment();
+                if (groupAssignment == null) {
+                    // Create new GroupAssignment if it doesn't exist
+                    groupAssignment = new GroupAssignment();
+                    groupAssignment.setAssignment(assignment);
+                    assignment.setGroupAssignment(groupAssignment);
+                }
+                
+                // Update group assignment properties
+                groupAssignment.setMaxTeamSize(maxTeamSize);
+                groupAssignment.setMinTeamSize(minTeamSize);
+                groupAssignment.setAllowSelfFormingTeams(allowSelfFormingTeams);
+                groupAssignment.setRequireProjectTitle(requireProjectTitle);
+            } else if (assignment.getGroupAssignment() != null) {
+                // If assignment type changed from GROUP to INDIVIDUAL, remove GroupAssignment
+                // Note: This could have implications if teams have already been formed
+                // You might want to add additional checks or confirmations here
+                GroupAssignment groupAssignment = assignment.getGroupAssignment();
+                assignment.setGroupAssignment(null);
+                entityManager.remove(groupAssignment);
             }
             
             // Save the updated assignment

@@ -339,35 +339,60 @@
         
         /* Content styles */
         .content-item {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #4285f4;
+        }
+        
+        .content-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .content-item-header {
             display: flex;
+            justify-content: space-between;
             align-items: flex-start;
-            padding: 1rem;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            background-color: white;
+            margin-bottom: 10px;
         }
         
-        .content-icon {
-            font-size: 1.5rem;
-            color: #3f51b5;
-            margin-right: 1rem;
-            min-width: 30px;
-            text-align: center;
+        .content-item-title {
+            display: flex;
+            align-items: center;
         }
         
-        .content-info {
-            flex: 1;
+        .content-item-title i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+            color: #4285f4;
         }
         
-        .content-title {
+        .content-item-title h3 {
+            margin: 0;
+            font-size: 1.2rem;
             font-weight: 500;
-            margin-bottom: 0.3rem;
+            color: #202124;
         }
         
-        .content-description {
-            color: #666;
-            margin-bottom: 0.5rem;
+        .content-item-meta {
+            color: #5f6368;
+            margin: 8px 0 12px 0;
+            font-size: 0.85rem;
+        }
+        
+        .content-item-description {
+            margin-bottom: 15px;
+            color: #3c4043;
+            white-space: pre-line;
+            line-height: 1.5;
+        }
+        
+        .content-resource {
+            margin-top: 15px;
         }
         
         .toast {
@@ -626,7 +651,7 @@
         }
         
         .content-item {
-            background-color: white;
+            background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             padding: 1.2rem;
@@ -678,6 +703,111 @@
         .btn-sm {
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
+        }
+        
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .content-list {
+            margin-bottom: 20px;
+        }
+        
+        .content-item {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .student-content-item {
+            border-left: 4px solid #4285f4; /* Google blue color for student content */
+        }
+        
+        .content-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .content-item-title {
+            display: flex;
+            align-items: center;
+        }
+        
+        .content-item-title i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+            color: #5f6368;
+        }
+        
+        .content-item-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .content-item-meta {
+            display: block;
+            color: #5f6368;
+            margin-top: 5px;
+        }
+        
+        .content-item-description {
+            margin-bottom: 15px;
+            color: #3c4043;
+            white-space: pre-line;
+        }
+        
+        .content-resource {
+            margin-top: 10px;
+        }
+        
+        .file-upload-container {
+            margin-top: 10px;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #4285f4;
+            background-color: #f1f3f4;
+        }
+        
+        .file-upload-area i {
+            font-size: 36px;
+            color: #5f6368;
+            margin-bottom: 10px;
+        }
+        
+        #content-file-list {
+            margin-top: 10px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f1f3f4;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        
+        .file-remove {
+            cursor: pointer;
+            color: #ea4335;
         }
     </style>
 </head>
@@ -782,6 +912,8 @@
     
     <!-- Content Tab -->
     <div class="tab-content" id="content">
+        <h2>Course Materials</h2>
+        
         <div id="content-items-container" class="content-list">
             <!-- Content items will be loaded here -->
         </div>
@@ -796,6 +928,8 @@
 
 <!-- Toast -->
 <div id="toast" class="toast">Operation successful!</div>
+
+<!-- No content creation functionality for students -->
 
 <script>
     // Tab switching
@@ -849,28 +983,22 @@
     
     // Function to load course content
     function loadCourseContent() {
-        // Extract course ID from URL
-        const courseId = window.location.pathname.split('/').pop();
+        const courseId = document.getElementById('course-id') ? 
+            document.getElementById('course-id').value : 
+            window.location.pathname.split('/').pop();
         
         // Get CSRF tokens
         const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
         const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
         
-        // Fetch content items
+        // Get course content
         fetch(`/api/courses/${courseId}/content`, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 [header]: token
             }
         })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Failed to load course content');
-            }
-        })
+        .then(response => response.json())
         .then(contentItems => {
             const container = document.getElementById('content-items-container');
             const placeholder = document.getElementById('no-content-placeholder');
@@ -885,23 +1013,21 @@
                 
                 // Create HTML for content items
                 const contentHTML = contentItems.map(item => `
-                    <div class="content-item card">
+                    <div class="content-item">
                         <div class="content-item-header">
                             <div class="content-item-title">
-                                <i class="fas ${getContentIcon(item.type)}"></i>
+                                <i class="fas ${getContentIcon(item.contentType)}"></i>
                                 <h3>${item.title}</h3>
                             </div>
                         </div>
-                        <div class="content-item-description">${item.description || ''}</div>
+                        
                         <div class="content-item-meta">
-                            ${item.link ? `<a href="${item.link}" target="_blank" class="btn btn-outline btn-sm">
-                                <i class="fas fa-external-link-alt"></i> Open Link
-                            </a>` : ''}
-                            ${item.fileId ? `<a href="/api/content/${item.id}/download" class="btn btn-outline btn-sm">
-                                <i class="fas fa-download"></i> Download
-                            </a>` : ''}
-                            <span class="content-type-badge">${item.type}</span>
+                            <small>Shared by: ${item.uploader ? (item.uploader.firstName ? item.uploader.firstName + ' ' + item.uploader.lastName : item.uploader.name || 'Teacher') : 'Teacher'}</small>
                         </div>
+                        
+                        <div class="content-item-description">${item.description || ''}</div>
+                        
+                        ${getContentResourceHTML(item)}
                     </div>
                 `).join('');
                 
@@ -909,23 +1035,46 @@
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showToast(error.message || 'Error loading content', 'error');
+            console.error('Error loading content:', error);
+            showToast('Error loading content');
         });
     }
     
     // Helper function to get appropriate icon for content type
-    function getContentIcon(type) {
-        switch (type) {
-            case 'DOCUMENT':
-                return 'fa-file-alt';
-            case 'LINK':
-                return 'fa-link';
-            case 'VIDEO':
-                return 'fa-video';
-            default:
-                return 'fa-file';
+    function getContentIcon(contentType) {
+        switch(contentType) {
+            case 'DOCUMENT': return 'fa-file-alt';
+            case 'LINK': return 'fa-link';
+            case 'VIDEO': return 'fa-video';
+            case 'ANNOUNCEMENT': return 'fa-bullhorn';
+            default: return 'fa-file';
         }
+    }
+    
+    // Content resource HTML generator
+    function getContentResourceHTML(content) {
+        if (!content) return '';
+        
+        if (content.contentType === 'LINK' && content.resourceUrl) {
+            return `<div class="content-resource">
+                <a href="${content.resourceUrl}" target="_blank" class="btn btn-outline">
+                    <i class="fas fa-external-link-alt"></i> Open Link
+                </a>
+            </div>`;
+        } else if (content.contentType === 'VIDEO' && content.resourceUrl) {
+            return `<div class="content-resource">
+                <a href="${content.resourceUrl}" target="_blank" class="btn btn-outline">
+                    <i class="fas fa-play"></i> Watch Video
+                </a>
+            </div>`;
+        } else if (content.contentType === 'DOCUMENT' && content.contentData) {
+            return `<div class="content-resource">
+                <a href="/api/content/${content.id}/download" class="btn btn-outline">
+                    <i class="fas fa-download"></i> Download Document
+                </a>
+            </div>`;
+        }
+        return '';
     }
     
     // Format file size helper
@@ -1087,238 +1236,12 @@
     
     // Submit assignment function
     function submitAssignment(assignmentId) {
-        // Close view modal if open
-        const viewModal = document.getElementById('viewAssignmentModal');
-        if (viewModal) {
-            viewModal.remove();
-        }
+        // Get the courseId from the current URL
+        const pathSegments = window.location.pathname.split('/');
+        const courseId = pathSegments[pathSegments.indexOf('course') + 1];
         
-        // Get CSRF tokens
-        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-        
-        // Fetch assignment details for the submission form
-        fetch(`/api/assignments/${assignmentId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                [header]: token
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Failed to load assignment details');
-            }
-        })
-        .then(assignment => {
-            // Format deadline
-            const deadlineDate = new Date(assignment.deadline);
-            const formattedDeadline = deadlineDate.toLocaleDateString() + ' at ' + 
-                deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Check if deadline is past
-            const isPastDeadline = new Date() > deadlineDate;
-            
-            // Create a modal with submission form
-            const modalHtml = `
-                <div class="modal" id="submitAssignmentModal">
-                    <div class="modal-content">
-                        <span class="close" onclick="document.getElementById('submitAssignmentModal').remove()">&times;</span>
-                        <h2>Submit Assignment: ${assignment.title}</h2>
-                        
-                        <div class="submission-status">
-                            <span class="badge ${isPastDeadline ? 'badge-warning' : 'badge-info'}">
-                                ${isPastDeadline ? 'Past Deadline' : 'Open'}
-                            </span>
-                            <span>Due: ${formattedDeadline}</span>
-                        </div>
-                        
-                        <div style="margin: 1rem 0;">
-                            ${isPastDeadline && !assignment.lateSubmissionAllowed ? 
-                                `<div class="alert" style="background-color: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 1rem;">
-                                    <i class="fas fa-exclamation-triangle"></i> 
-                                    This assignment is past the deadline and late submissions are not allowed.
-                                </div>` : 
-                                isPastDeadline && assignment.lateSubmissionAllowed ? 
-                                `<div class="alert" style="background-color: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 1rem;">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    This is a late submission. A penalty of ${assignment.latePenaltyPercentage || 0}% may apply.
-                                </div>` : 
-                                ''
-                            }
-                        </div>
-                        
-                        <form id="submissionForm">
-                            <input type="hidden" name="assignmentId" value="${assignment.id}">
-                            
-                            <div class="form-group">
-                                <label for="submissionText">Your Answer</label>
-                                <textarea 
-                                    id="submissionText" 
-                                    name="submissionText" 
-                                    rows="6" 
-                                    style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
-                                    placeholder="Type your answer here..."
-                                    required
-                                ></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Attachments</label>
-                                <div class="file-upload-container">
-                                    <div class="file-upload-area" id="uploadArea">
-                                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #3f51b5; margin-bottom: 0.5rem;"></i>
-                                        <p>Drag & drop files here or click to browse</p>
-                                    </div>
-                                    <input 
-                                        type="file" 
-                                        id="submissionFile" 
-                                        name="attachments" 
-                                        multiple 
-                                        style="display: none;" 
-                                    >
-                                </div>
-                                <div id="file-list" class="file-list"></div>
-                            </div>
-                            
-                            <div class="submission-form-buttons">
-                                <button type="button" class="btn btn-outline" onclick="document.getElementById('submitAssignmentModal').remove()">
-                                    Cancel
-                                </button>
-                                <button type="submit" class="btn btn-primary" id="submitBtn">
-                                    <i class="fas fa-paper-plane"></i> Submit Assignment
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            
-            // Add modal to body
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            document.getElementById('submitAssignmentModal').style.display = 'block';
-            
-            // Handle file selection display
-            document.getElementById('uploadArea').addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('submissionFile').click();
-            });
-            
-            // Restore the file selection display functionality
-            document.getElementById('submissionFile').addEventListener('change', function() {
-                const fileList = document.getElementById('file-list');
-                fileList.innerHTML = '';
-                
-                if (this.files.length > 0) {
-                    for (let i = 0; i < this.files.length; i++) {
-                        const file = this.files[i];
-                        const fileSize = (file.size / 1024).toFixed(2) + ' KB';
-                        
-                        const fileItem = document.createElement('div');
-                        fileItem.className = 'file-item';
-                        fileItem.innerHTML = `
-                            <div class="file-info">
-                                <span class="file-name">${file.name}</span>
-                                <span class="file-size">${fileSize}</span>
-                            </div>
-                            <button type="button" class="file-remove" data-index="${i}">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        `;
-                        fileList.appendChild(fileItem);
-                    }
-                    
-                    // Add event listeners to remove buttons
-                    document.querySelectorAll('.file-remove').forEach(button => {
-                        button.addEventListener('click', function(e) {
-                            e.stopPropagation(); // Prevent triggering file input
-                            // Note: In a real implementation, we would need to create a new FileList
-                            // Since FileList is read-only, this is just visual feedback
-                            this.closest('.file-item').remove();
-                        });
-                    });
-                }
-            });
-            
-            // Handle submission form
-            document.getElementById('submissionForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const assignmentId = document.querySelector('input[name="assignmentId"]').value;
-                const submissionText = document.getElementById('submissionText').value;
-                const submissionFiles = document.getElementById('submissionFile').files;
-                
-                // Show loading state
-                const submitBtn = document.getElementById('submitBtn');
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-                submitBtn.disabled = true;
-                
-                // Create FormData object
-                const formData = new FormData();
-                formData.append('assignmentId', assignmentId);
-                formData.append('submissionText', submissionText);
-                
-                // Add all files to form data
-                for (let i = 0; i < submissionFiles.length; i++) {
-                    formData.append('attachments', submissionFiles[i]);
-                }
-                
-                // Log form data for debugging
-                console.log('Submitting assignment:', {
-                    assignmentId,
-                    submissionText,
-                    files: Array.from(submissionFiles).map(f => f.name)
-                });
-                
-                // Make API call
-                fetch('/api/submissions/submit', {
-                    method: 'POST',
-                    headers: {
-                        [header]: token
-                    },
-                    body: formData
-                })
-                .then(response => {
-                    console.log('Submission response status:', response.status);
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            try {
-                                const error = JSON.parse(text);
-                                throw new Error(error.message || 'Failed to submit assignment');
-                            } catch (e) {
-                                throw new Error('Failed to submit assignment: ' + text);
-                            }
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Submission success:', data);
-                    showToast('Assignment submitted successfully!', 'success');
-                    document.getElementById('submitAssignmentModal').remove();
-                    
-                    // Reload page after a short delay to show updated status
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                })
-                .catch(error => {
-                    console.error('Submission error:', error);
-                    showToast(error.message || 'Error submitting assignment', 'error');
-                })
-                .finally(() => {
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                });
-            });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast(error.message || 'Error loading assignment', 'error');
-        });
+        // Redirect to submission page
+        window.location.href = `/student/course/${courseId}/assignment/${assignmentId}/submit`;
     }
     
     // Download attachment function
@@ -1370,9 +1293,42 @@
         const pathSegments = window.location.pathname.split('/');
         const courseId = pathSegments[pathSegments.indexOf('course') + 1];
         
-        // Open modal or redirect to submission detail page
+        // Redirect to submission view page
         window.location.href = `/student/course/${courseId}/assignment/${assignmentId}/submission`;
     }
+    
+    function closeModals() {
+        const modals = document.getElementsByClassName('modal');
+        for (let i = 0; i < modals.length; i++) {
+            modals[i].style.display = 'none';
+        }
+    }
+    
+    // Prevent any requests to /api/content endpoint by intercepting fetch and XMLHttpRequest
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options) {
+        // Only block POST/PUT/DELETE requests to /api/content endpoint
+        if (url && url.includes('/api/content') && 
+            options && ['POST', 'PUT', 'DELETE'].includes(options.method) && 
+            !(url.includes('/download') || url.includes('/api/courses'))) {
+            console.error('Blocked request to:', url);
+            return Promise.reject(new Error('Content creation is not allowed for students'));
+        }
+        return originalFetch.apply(this, arguments);
+    };
+    
+    // Also intercept XMLHttpRequest for older browsers
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        // Only block POST/PUT/DELETE requests to /api/content endpoint
+        if (url && url.includes('/api/content') && 
+            ['POST', 'PUT', 'DELETE'].includes(method) && 
+            !(url.includes('/download') || url.includes('/api/courses'))) {
+            console.error('Blocked XMLHttpRequest to:', url);
+            throw new Error('Content creation is not allowed for students');
+        }
+        return originalXHROpen.call(this, method, url, ...rest);
+    };
 </script>
 
 </body>
