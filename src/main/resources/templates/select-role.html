@@ -60,12 +60,30 @@
         button:hover {
             background-color: #144e84;
         }
+        
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Select Your Role</h2>
+    
+    <!-- Error Messages -->
+    <div class="error-message" th:if="${param.error != null}">
+        <span th:if="${param.error[0] == 'invalid_role'}">Invalid role selected. Please try again.</span>
+        <span th:if="${param.error[0] == 'save_failed'}">Failed to save your role. Please try again or contact support.</span>
+        <span th:if="${param.error[0] == 'user_not_found'}">User account not found. Please try logging in again.</span>
+    </div>
+    
     <form method="POST" action="/assign-role">
         <input type="hidden" name="email" th:value="${email}">
 

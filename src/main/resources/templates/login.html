@@ -315,7 +315,12 @@
 
             <!-- Add alert messages -->
             <div th:if="${param.error}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
-                <i class="fas fa-exclamation-circle"></i> Invalid username or password
+                <i class="fas fa-exclamation-circle"></i> 
+                <span th:if="${param.error[0] == 'invalid_oauth'}">Authentication failed. Please try again or use a different login method.</span>
+                <span th:if="${param.error[0] == 'no_email'}">Could not retrieve email from your OAuth provider. Please ensure your account has a valid email address.</span>
+                <span th:if="${param.error[0] == 'user_creation_failed'}">Failed to create your account. Please try again or contact support.</span>
+                <span th:if="${param.error[0] == 'user_not_found'}">User account not found. Please sign up first.</span>
+                <span th:unless="${param.error[0] == 'invalid_oauth' || param.error[0] == 'no_email' || param.error[0] == 'user_creation_failed' || param.error[0] == 'user_not_found'}">Invalid username or password</span>
             </div>
             <div th:if="${param.logout}" class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
                 <i class="fas fa-check-circle"></i> You have been successfully logged out

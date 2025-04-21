@@ -3,20 +3,25 @@ package com.classroom.service;
 import com.classroom.model.User;
 import com.classroom.model.UserType;
 import com.classroom.repository.UserRepository;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Component
 public class OAuthCustomSuccessHandler implements AuthenticationSuccessHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(OAuthCustomSuccessHandler.class);
     private final UserRepository userRepository;
 
     public OAuthCustomSuccessHandler(UserRepository userRepository) {
@@ -28,39 +33,76 @@ public class OAuthCustomSuccessHandler implements AuthenticationSuccessHandler {
                                         Authentication authentication) throws IOException, ServletException {
 
         // Log the authentication success
-        System.out.println("OAuth authentication successful");
+        logger.info("OAuth authentication successful");
+        
+        if (!(authentication.getPrincipal() instanceof OAuth2User)) {
+            logger.error("Principal is not an OAuth2User: {}", authentication.getPrincipal().getClass().getName());
+            response.sendRedirect("/login?error=invalid_oauth");
+            return;
+        }
         
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        
+        // Extract email from the OAuth2User attributes
         String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name"); // Optional: capture name too
+        if (email == null || email.trim().isEmpty()) {
+            logger.error("Email not found in OAuth2User attributes");
+            response.sendRedirect("/login?error=no_email");
+            return;
+        }
+        
+        String name = oAuth2User.getAttribute("name");
+        if (name == null || name.trim().isEmpty()) {
+            // Fallback to email if name is not provided
+            logger.warn("Name not found in OAuth2User attributes, using email prefix");
+            name = email.split("@")[0];
+        }
 
-        System.out.println("OAuth user email: " + email);
+        logger.info("OAuth user email: {}", email);
         
         Optional<User> userOptional = userRepository.findByEmail(email);
         User user;
 
-        if (userOptional.isPresent()) {
-            user = userOptional.get();
-            System.out.println("Existing user found with ID: " + user.getId() + ", UserType: " + user.getUserType());
-        } else {
-            // Auto-register the user
-            user = new User();
-            user.setEmail(email);
-            user.setName(name); // if your User model has a name field
-            user.setUserType(null); // force role selection
-            user.setActive(true);
-            user.setPassword("OAUTH_USER"); // Dummy password for OAuth users
-            user = userRepository.save(user);
-            System.out.println("New user created with ID: " + user.getId());
+        try {
+            if (userOptional.isPresent()) {
+                user = userOptional.get();
+                logger.info("Existing user found with ID: {}, UserType: {}", user.getId(), user.getUserType());
+                
+                // Update last login time
+                user.setUpdatedAt(LocalDateTime.now());
+                userRepository.save(user);
+            } else {
+                // Auto-register the user
+                logger.info("Creating new user with email: {}", email);
+                user = new User();
+                user.setEmail(email);
+                user.setName(name);
+                user.setFirstName(name.split(" ").length > 0 ? name.split(" ")[0] : name);
+                user.setLastName(name.split(" ").length > 1 ? name.split(" ")[1] : "");
+                user.setUserType(null); // force role selection
+                user.setActive(true);
+                user.setGoogleLinked(true);
+                user.setOauthId(oAuth2User.getName());
+                user.setPassword("OAUTH_USER"); // Dummy password for OAuth users
+                user.setCreatedAt(LocalDateTime.now());
+                user.setUpdatedAt(LocalDateTime.now());
+                
+                user = userRepository.save(user);
+                logger.info("New user created with ID: {}", user.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error creating/updating user during OAuth authentication", e);
+            response.sendRedirect("/login?error=user_creation_failed");
+            return;
         }
 
         // Redirect to role selection if role not set
         if (user.getUserType() == null) {
-            System.out.println("User has no role - redirecting to select-role page");
+            logger.info("User has no role - redirecting to select-role page");
             
             // Make sure the select-role endpoint is properly configured to be accessible
             String selectRoleUrl = "/select-role?email=" + email;
-            System.out.println("Redirecting to: " + selectRoleUrl);
+            logger.info("Redirecting to: {}", selectRoleUrl);
             
             response.sendRedirect(selectRoleUrl);
         } else {
@@ -73,7 +115,7 @@ public class OAuthCustomSuccessHandler implements AuthenticationSuccessHandler {
                 default -> redirectUrl = "/login"; // Changed from /index to /login to avoid potential loops
             }
             
-            System.out.println("User has role: " + user.getUserType() + " - redirecting to: " + redirectUrl);
+            logger.info("User has role: {} - redirecting to: {}", user.getUserType(), redirectUrl);
             response.sendRedirect(redirectUrl);
         }
     }
